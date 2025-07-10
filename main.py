@@ -32,7 +32,12 @@ from sklearn.calibration import CalibratedClassifierCV
 # Para visualización
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+from scipy.interpolate import griddata
+import contextily as cx
+from matplotlib.path import Path
+from matplotlib.patches import PathPatch
+import matplotlib.path as mpath 
+from matplotlib.patches import PathPatch
 # Para manejo de archivos y rutas
 from pathlib import Path
 
@@ -473,7 +478,7 @@ plt.show()
 print("\n--- INICIANDO FASE DE APLICACIÓN: MAPA DE RIESGO ---")
 
 # --- 6.1. Crear rejilla de puntos dentro del polígono del departamento ---
-cell_size = 0.05 
+cell_size = 0.005 
 minx, miny, maxx, maxy = study_area_bounds
 x_coords = np.arange(minx, maxx, cell_size)
 y_coords = np.arange(miny, maxy, cell_size)
@@ -505,31 +510,76 @@ else:
         prob_incendio = full_pipeline.predict_proba(X_grid)[:, 1]
         grid_con_variables['prob_incendio'] = prob_incendio
 
-        # --- Visualización ---
-        fig, ax = plt.subplots(1, 1, figsize=(12, 10))
+        fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+
+        # --- 1. Preparar datos para la interpolación ---
+        points = np.array([grid_con_variables.geometry.x, grid_con_variables.geometry.y]).T
+        values = grid_con_variables['prob_incendio'].values
         
-        # Dibujar el contorno del departamento
-        area_estudio_gdf.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=1.5, label='Límite del Departamento')
-        
-        # Dibujar los puntos de riesgo
-        grid_con_variables.plot(
-            column='prob_incendio', 
-            ax=ax, 
-            legend=True, 
-            cmap='YlOrRd', # Amarillo -> Naranja -> Rojo
-            vmin=0, 
-            vmax=1, 
-            legend_kwds={'label': "Probabilidad de Incendio", 'orientation': "horizontal"}
+        vmin = pd.Series(values).quantile(0.05)
+        vmax = pd.Series(values).quantile(0.95)
+
+        minx, miny, maxx, maxy = area_estudio_gdf.total_bounds
+        grid_x, grid_y = np.mgrid[minx:maxx:500j, miny:maxy:500j]
+
+        print("Interpolando resultados para crear mapa de calor...")
+        interpolated_grid = griddata(points, values, (grid_x, grid_y), method='cubic')
+        interpolated_grid = np.nan_to_num(interpolated_grid, nan=vmin)
+
+        # --- 2. Dibujar el mapa de calor interpolado ---
+        im = ax.imshow(
+            interpolated_grid.T, 
+            extent=(minx, maxx, miny, maxy), 
+            origin='lower', 
+            cmap='YlOrRd', # <--- ¡CAMBIO REALIZADO AQUÍ!
+            alpha=0.9,      # Puedes ajustar la transparencia si quieres
+            vmin=vmin,      
+            vmax=vmax       
         )
         
-        ax.set_title(f"Mapa de Riesgo de Incendio para Cordillera\nFecha: {fecha_prediccion.date()}")
+        # --- 3. Enmascarar el mapa de calor ---
+        import matplotlib.path as mpath
+        from matplotlib.patches import PathPatch
+        
+        union_poly = area_estudio_gdf.union_all()
+        path_verts, path_codes = [], []
+        def add_polygon_to_path(polygon):
+            path_verts.extend(np.asarray(polygon.exterior.coords.xy).T)
+            path_codes.extend([mpath.Path.MOVETO] + [mpath.Path.LINETO] * (len(polygon.exterior.coords) - 1))
+            for interior in polygon.interiors:
+                path_verts.extend(np.asarray(interior.coords.xy).T)
+                path_codes.extend([mpath.Path.MOVETO] + [mpath.Path.LINETO] * (len(interior.coords) - 1))
+        
+        if union_poly.geom_type == 'Polygon': add_polygon_to_path(union_poly)
+        elif union_poly.geom_type == 'MultiPolygon':
+            for poly in union_poly.geoms: add_polygon_to_path(poly)
+        
+        clip_path = mpath.Path(path_verts, path_codes)
+        patch = PathPatch(clip_path, transform=ax.transData, facecolor='none')
+        im.set_clip_path(patch)
+
+        # --- 4. Dibujar contornos ---
+        area_estudio_gdf.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=1) 
+        distritos_shp_path = "data/COORDILLERA/Distritos_Coordillera.shp"
+        if os.path.exists(distritos_shp_path):
+            distritos_gdf = gpd.read_file(distritos_shp_path).to_crs(area_estudio_gdf.crs)
+            distritos_gdf.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=0.5, alpha=0.6)
+
+        # --- 5. Configuración final ---
+        ax.set_title(f"Mapa de Riesgo de Incendio para Cordillera\nFecha: {fecha_prediccion.date()}", fontsize=18)
         ax.set_xlabel("Longitud")
         ax.set_ylabel("Latitud")
+        ax.grid(True, linestyle='--', alpha=0.4)
         
-        # Guardar la figura
-        risk_map_path = OUTPUT_DIR / "risk_map.png"
+        ax.set_xlim(minx - 0.05, maxx + 0.05)
+        ax.set_ylim(miny - 0.05, maxy + 0.05)
+
+        cbar = fig.colorbar(im, ax=ax, shrink=0.7)
+        cbar.set_label('Probabilidad de Incendio', fontsize=12)
+
+        risk_map_path = OUTPUT_DIR / "risk_map_heatmap_final.png"
         plt.savefig(risk_map_path, dpi=300, bbox_inches='tight')
-        print(f"Mapa de riesgo guardado en: {risk_map_path}")
+        print(f"Mapa de calor final guardado en: {risk_map_path}")
         
         plt.show()
     else:
