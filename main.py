@@ -182,23 +182,35 @@ def load_giovanni_data(giovanni_folder):
 # ==============================================================================
 print("\n--- INICIANDO FASE DE PREPARACIÓN DE DATOS ---")
 
-# --- 2.1. Definir el área de estudio a partir del DEM ---
+DEPARTAMENTO_SHP_PATH = "data/COORDILLERA/Departamento_Coordillera.shp" 
+
+# --- 2.1. Definir el área de estudio a partir del SHAPEFILE ---
+print(f"Cargando área de estudio desde: {DEPARTAMENTO_SHP_PATH}")
+try:
+    area_estudio_gdf = gpd.read_file(DEPARTAMENTO_SHP_PATH)
+except Exception as e:
+    print(f"ERROR: No se pudo leer el shapefile en la ruta: {DEPARTAMENTO_SHP_PATH}")
+    print(f"Asegúrate de que la ruta es correcta y que los archivos .shp, .shx, .dbf existen.")
+    exit() # Detener el script si no se puede cargar el área de estudio
+
+# Obtener los límites, el polígono y el CRS del shapefile
+CRS_REFERENCE = area_estudio_gdf.crs.to_string()
+study_area_bounds = area_estudio_gdf.total_bounds
+study_area_polygon = area_estudio_gdf.unary_union
+
+print(f"Área de estudio definida por el polígono del Dpto. de Cordillera. CRS: {CRS_REFERENCE}")
+
+# --- Fusionar DEM (sigue siendo necesario para los datos topográficos) ---
 merge_dem_tiles(DEM_DIR, MERGED_DEM_PATH)
-with rioxarray.open_rasterio(MERGED_DEM_PATH) as dem:
-    CRS_REFERENCE = dem.rio.crs.to_string()
-    study_area_bounds = dem.rio.bounds()
-    study_area_polygon = box(*study_area_bounds)
 
-print(f"Área de estudio definida por la extensión del DEM. CRS: {CRS_REFERENCE}")
-
-# --- 2.2. Cargar datos de incendios (puntos positivos) ---
+# --- 2.2. Cargar datos de incendios (puntos positivos) DENTRO de Cordillera ---
 puntos_positivos = load_firms_data(FIRMS_DIR, study_area_polygon, CRS_REFERENCE)
 
 # --- 2.3. Generar puntos negativos ---
 print("\nGenerando muestras negativas (no-incendios)...")
-n_negativos = len(puntos_positivos)
+n_negativos = len(puntos_positivos) if len(puntos_positivos) > 0 else 1000 # Evitar 0
 puntos_negativos_list = []
-minx, miny, maxx, maxy = study_area_bounds
+minx, miny, maxx, maxy = study_area_bounds 
 
 # Rango de fechas para generar fechas aleatorias
 start_date = puntos_positivos['date'].min()
@@ -435,10 +447,15 @@ ax1.set_ylabel("Real")
 fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
 ax2.plot(fpr, tpr, label=f'Stacking Model (AUC = {roc_auc:.2f})')
 ax2.plot([0, 1], [0, 1], 'k--', label='Azar')
-ax2.set_title('Curva ROC')
+ax2.set_title('Curva de ROC', fontweight='bold')
 ax2.set_xlabel('Tasa de Falsos Positivos')
 ax2.set_ylabel('Tasa de Verdaderos Positivos')
 ax2.legend()
+ax2.set_yticks(np.arange(0, 1.1, 0.1))
+ax2.set_xticks(np.arange(0, 1.1, 0.2))
+ax2.grid(True, which='both', linestyle='-', linewidth=0.5)
+ax2.set_xlim([0.0, 1.0])
+ax2.set_ylim([0.0, 1.0])
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95]) # Ajustar para el supertítulo
 
@@ -455,43 +472,69 @@ plt.show()
 # ==============================================================================
 print("\n--- INICIANDO FASE DE APLICACIÓN: MAPA DE RIESGO ---")
 
-# --- 6.1. Crear rejilla de puntos ---
-cell_size = 10000  # 10 km
+# --- 6.1. Crear rejilla de puntos dentro del polígono del departamento ---
+cell_size = 0.05 
 minx, miny, maxx, maxy = study_area_bounds
 x_coords = np.arange(minx, maxx, cell_size)
 y_coords = np.arange(miny, maxy, cell_size)
 xv, yv = np.meshgrid(x_coords, y_coords)
 grid_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in zip(xv.ravel(), yv.ravel())], crs=CRS_REFERENCE)
-grid_en_area = grid_gdf[grid_gdf.intersects(study_area_polygon)]
+
+# Filtrar los puntos para que estén estrictamente dentro del polígono del departamento
+grid_en_area = grid_gdf[grid_gdf.within(study_area_polygon)]
+
 if grid_en_area.empty:
-    print("\nADVERTENCIA: No se generaron puntos en la rejilla que intersecten el área de estudio.")
-    print("El mapa de riesgo no se puede generar. Revisa la proyección y los límites del área.")
+    print("\nADVERTENCIA: No se generaron puntos en la rejilla que caigan dentro del polígono del departamento.")
+    print("Prueba un 'cell_size' aún más pequeño si el departamento es muy irregular.")
 else:
     print(f"Se generaron {len(grid_en_area)} puntos en la rejilla para la predicción.")
-# --- 6.2. Asignar fecha y variables a la rejilla ---
-fecha_prediccion = pd.to_datetime("2023-08-15") # Fecha de ejemplo
-grid_en_area['date'] = fecha_prediccion
-
-grid_con_variables = asignar_variables(grid_en_area, MERGED_DEM_PATH, NDVI_DIR, weather_data).dropna()
-
-# --- 6.3. Predecir y visualizar ---
-if not grid_con_variables.empty:
-    X_grid = grid_con_variables[X_train.columns]
-    prob_incendio = full_pipeline.predict_proba(X_grid)[:, 1]
-    grid_con_variables['prob_incendio'] = prob_incendio
-
-    fig, ax = plt.subplots(1, 1, figsize=(12, 10))
-    gpd.GeoSeries([study_area_polygon], crs=CRS_REFERENCE).plot(ax=ax, color='none', edgecolor='black', linewidth=1.5)
-    grid_con_variables.plot(column='prob_incendio', ax=ax, legend=True,
-                            cmap='YlOrRd', vmin=0, vmax=1,
-                            legend_kwds={'label': "Probabilidad de Incendio", 'orientation': "horizontal"})
-    ax.set_title(f"Mapa de Riesgo de Incendio Estimado para {fecha_prediccion.date()}")
     
-    # Guardar el mapa de riesgo
-    risk_map_path = OUTPUT_DIR / "risk_map.png"
-    plt.savefig(risk_map_path, dpi=300, bbox_inches='tight')
-    print(f"Mapa de riesgo guardado en: {risk_map_path}")
+    # --- 6.2. Asignar fecha y variables a la rejilla ---
+    fecha_prediccion = pd.to_datetime("2023-08-15")
+    grid_en_area['date'] = fecha_prediccion
+
+    grid_con_variables_raw = asignar_variables(grid_en_area, MERGED_DEM_PATH, NDVI_DIR, weather_data)
     
-    plt.show()
-else:
-    print("No se pudo generar el mapa de riesgo.")
+    # Eliminar filas que tengan algún valor nulo después de la asignación
+    grid_con_variables = grid_con_variables_raw.dropna()
+    
+    # --- 6.3. Predecir y visualizar ---
+    if not grid_con_variables.empty:
+        print(f"Prediciendo el riesgo para {len(grid_con_variables)} puntos válidos.")
+        X_grid = grid_con_variables[X_train.columns]
+        prob_incendio = full_pipeline.predict_proba(X_grid)[:, 1]
+        grid_con_variables['prob_incendio'] = prob_incendio
+
+        # --- Visualización ---
+        fig, ax = plt.subplots(1, 1, figsize=(12, 10))
+        
+        # Dibujar el contorno del departamento
+        area_estudio_gdf.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=1.5, label='Límite del Departamento')
+        
+        # Dibujar los puntos de riesgo
+        grid_con_variables.plot(
+            column='prob_incendio', 
+            ax=ax, 
+            legend=True, 
+            cmap='YlOrRd', # Amarillo -> Naranja -> Rojo
+            vmin=0, 
+            vmax=1, 
+            legend_kwds={'label': "Probabilidad de Incendio", 'orientation': "horizontal"}
+        )
+        
+        ax.set_title(f"Mapa de Riesgo de Incendio para Cordillera\nFecha: {fecha_prediccion.date()}")
+        ax.set_xlabel("Longitud")
+        ax.set_ylabel("Latitud")
+        
+        # Guardar la figura
+        risk_map_path = OUTPUT_DIR / "risk_map.png"
+        plt.savefig(risk_map_path, dpi=300, bbox_inches='tight')
+        print(f"Mapa de riesgo guardado en: {risk_map_path}")
+        
+        plt.show()
+    else:
+        print("\nERROR FINAL: No se pudo generar el mapa de riesgo.")
+        print("Causa: Después de eliminar filas con valores nulos, no quedó ningún punto en la rejilla.")
+        print("Esto suele ocurrir si los puntos caen fuera de la cobertura de algún raster (ej. NDVI).")
+        print("Valores nulos encontrados en la rejilla antes de eliminar:")
+        print(grid_con_variables_raw.isnull().sum())
