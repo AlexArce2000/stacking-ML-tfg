@@ -25,23 +25,35 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier, StackingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score, roc_curve
+# para calibración de SVM
+from sklearn.svm import LinearSVC
+from sklearn.calibration import CalibratedClassifierCV
 
 # Para visualización
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# Para manejo de archivos y rutas
+from pathlib import Path
 
 # Para operaciones espaciales eficientes
 from shapely.geometry import Point, box
 
 print("Librerías cargadas exitosamente.")
 
-# --- Rutas a las carpetas de datos (ajusta si es necesario) ---
+# --- Rutas a las carpetas de datos ---
 DATA_DIR = "data"
 DEM_DIR = os.path.join(DATA_DIR, "DEM")
 FIRMS_DIR = os.path.join(DATA_DIR, "FIRMS")
 GIOVANNI_DIR = os.path.join(DATA_DIR, "Giovanni NASA")
 NDVI_DIR = os.path.join(DATA_DIR, "NDVI")
 MERGED_DEM_PATH = os.path.join(DEM_DIR, "merged_dem.tif")
+
+# --- Crear carpeta de salida para los resultados ---
+TIMESTAMP = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+OUTPUT_DIR = Path("outputs") / TIMESTAMP
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+print(f"Los resultados se guardarán en: {OUTPUT_DIR}")
 
 # ==============================================================================
 # 1. FUNCIONES AUXILIARES PARA CARGAR Y PREPROCESAR DATOS
@@ -358,9 +370,11 @@ preprocessor = ColumnTransformer(
     ])
 
 # --- 5.3. Definir y crear el modelo de Stacking ---
+# --- NUEVA DEFINICIÓN DE ESTIMADORES (MÁS RÁPIDA) ---
 estimators = [
     ('rf', RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)),
-    ('svm', SVC(kernel='linear', probability=True, random_state=42)),
+    # Usamos LinearSVC envuelto en CalibratedClassifierCV para velocidad y probabilidades
+    ('svm', CalibratedClassifierCV(LinearSVC(random_state=42, dual='auto'), cv=3)),
     ('knn', KNeighborsClassifier(n_neighbors=10, n_jobs=-1))
 ]
 meta_model = LogisticRegression(solver='liblinear')
@@ -390,8 +404,25 @@ print(f"ROC AUC Score: {roc_auc_score(y_test, y_pred_proba):.4f}")
 print("\nReporte de Clasificación:")
 print(classification_report(y_test, y_pred, target_names=['No Incendio', 'Incendio']))
 
-# --- 5.6. Visualizaciones de resultados ---
+# --- 5.6. Visualizaciones de resultados y guardado ---
+print("\n--- Guardando resultados del modelo ---")
+
+# --- Guardar el reporte de clasificación en un archivo de texto ---
+report = classification_report(y_test, y_pred, target_names=['No Incendio', 'Incendio'])
+accuracy = accuracy_score(y_test, y_pred)
+roc_auc = roc_auc_score(y_test, y_pred_proba)
+
+report_path = OUTPUT_DIR / "classification_report.txt"
+with open(report_path, "w") as f:
+    f.write(f"Accuracy: {accuracy:.4f}\n")
+    f.write(f"ROC AUC Score: {roc_auc:.4f}\n\n")
+    f.write("Classification Report:\n")
+    f.write(report)
+print(f"Reporte de clasificación guardado en: {report_path}")
+
+# --- Crear y guardar el gráfico combinado (Matriz de Confusión y Curva ROC) ---
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+fig.suptitle('Resultados del Modelo de Stacking', fontsize=16)
 
 # Matriz de Confusión
 cm = confusion_matrix(y_test, y_pred)
@@ -402,13 +433,21 @@ ax1.set_ylabel("Real")
 
 # Curva ROC
 fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
-ax2.plot(fpr, tpr, label=f'Stacking Model (AUC = {roc_auc_score(y_test, y_pred_proba):.2f})')
+ax2.plot(fpr, tpr, label=f'Stacking Model (AUC = {roc_auc:.2f})')
 ax2.plot([0, 1], [0, 1], 'k--', label='Azar')
 ax2.set_title('Curva ROC')
 ax2.set_xlabel('Tasa de Falsos Positivos')
 ax2.set_ylabel('Tasa de Verdaderos Positivos')
 ax2.legend()
-plt.tight_layout()
+
+plt.tight_layout(rect=[0, 0.03, 1, 0.95]) # Ajustar para el supertítulo
+
+# Guardar la figura
+plot_path = OUTPUT_DIR / "performance_plot.png"
+plt.savefig(plot_path, dpi=300)
+print(f"Gráfico de rendimiento guardado en: {plot_path}")
+
+# Mostrar el gráfico en pantalla
 plt.show()
 
 # ==============================================================================
@@ -423,8 +462,12 @@ x_coords = np.arange(minx, maxx, cell_size)
 y_coords = np.arange(miny, maxy, cell_size)
 xv, yv = np.meshgrid(x_coords, y_coords)
 grid_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in zip(xv.ravel(), yv.ravel())], crs=CRS_REFERENCE)
-grid_en_area = grid_gdf[grid_gdf.within(study_area_polygon)]
-
+grid_en_area = grid_gdf[grid_gdf.intersects(study_area_polygon)]
+if grid_en_area.empty:
+    print("\nADVERTENCIA: No se generaron puntos en la rejilla que intersecten el área de estudio.")
+    print("El mapa de riesgo no se puede generar. Revisa la proyección y los límites del área.")
+else:
+    print(f"Se generaron {len(grid_en_area)} puntos en la rejilla para la predicción.")
 # --- 6.2. Asignar fecha y variables a la rejilla ---
 fecha_prediccion = pd.to_datetime("2023-08-15") # Fecha de ejemplo
 grid_en_area['date'] = fecha_prediccion
@@ -438,11 +481,17 @@ if not grid_con_variables.empty:
     grid_con_variables['prob_incendio'] = prob_incendio
 
     fig, ax = plt.subplots(1, 1, figsize=(12, 10))
-    gpd.GeoSeries([study_area_polygon], crs=CRS_REFERENCE).plot(ax=ax, color='lightgrey', edgecolor='black')
+    gpd.GeoSeries([study_area_polygon], crs=CRS_REFERENCE).plot(ax=ax, color='none', edgecolor='black', linewidth=1.5)
     grid_con_variables.plot(column='prob_incendio', ax=ax, legend=True,
                             cmap='YlOrRd', vmin=0, vmax=1,
                             legend_kwds={'label': "Probabilidad de Incendio", 'orientation': "horizontal"})
     ax.set_title(f"Mapa de Riesgo de Incendio Estimado para {fecha_prediccion.date()}")
+    
+    # Guardar el mapa de riesgo
+    risk_map_path = OUTPUT_DIR / "risk_map.png"
+    plt.savefig(risk_map_path, dpi=300, bbox_inches='tight')
+    print(f"Mapa de riesgo guardado en: {risk_map_path}")
+    
     plt.show()
 else:
     print("No se pudo generar el mapa de riesgo.")
