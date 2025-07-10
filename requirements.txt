@@ -1,0 +1,11 @@
+pandas
+geopandas
+rasterio
+rioxarray
+scikit-learn
+matplotlib
+seaborn
+xarray
+xarray-spatial
+dask
+pyarrow
