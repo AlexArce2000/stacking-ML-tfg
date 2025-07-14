@@ -1,0 +1,12 @@
+Accuracy: 0.9861
+ROC AUC Score: 0.9983
+
+Classification Report:
+              precision    recall  f1-score   support
+
+ No Incendio       0.98      0.99      0.99      4221
+    Incendio       0.99      0.98      0.99      4221
+
+    accuracy                           0.99      8442
+   macro avg       0.99      0.99      0.99      8442
+weighted avg       0.99      0.99      0.99      8442
