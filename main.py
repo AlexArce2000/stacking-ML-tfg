@@ -53,6 +53,10 @@ FIRMS_DIR = os.path.join(DATA_DIR, "FIRMS")
 GIOVANNI_DIR = os.path.join(DATA_DIR, "Giovanni NASA")
 NDVI_DIR = os.path.join(DATA_DIR, "NDVI")
 MERGED_DEM_PATH = os.path.join(DEM_DIR, "merged_dem.tif")
+HUMEDAD_TIF_PATH = os.path.join(GIOVANNI_DIR, "Humedad", "Humedad_Cordillera.tif")
+DEPARTAMENTO_SHP_PATH = "data/COORDILLERA/Departamento_Coordillera.shp"
+VIAS_SHP_PATH = "data/COORDILLERA/Vias_principales_Coordillera.shp"
+CIUDADES_SHP_PATH = "data/COORDILLERA/Ciudades_Coordillera.shp"
 
 # --- Crear carpeta de salida para los resultados ---
 TIMESTAMP = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -259,91 +263,88 @@ print(sample['fire'].value_counts())
 # 3. ASIGNACIÓN DE VARIABLES A LA MUESTRA
 # ==============================================================================
 
-def asignar_variables(df_puntos, dem_path, ndvi_folder, weather_df):
-    """Asigna variables predictoras a un GeoDataFrame de puntos con fechas."""
+# ==============================================================================
+# 3. ASIGNACIÓN DE VARIABLES A LA MUESTRA
+# ==============================================================================
+
+def asignar_variables(df_puntos, dem_path, ndvi_folder, weather_df, humedad_tif_path, vias_shp_path, ciudades_shp_path):
+    """
+    Asigna TODAS las variables predictoras (topográficas, vegetación, clima, humedad y proximidad)
+    a un GeoDataFrame de puntos con fechas.
+    """
     print("\n--- INICIANDO FASE DE ASIGNACIÓN DE VARIABLES ---")
     
-    # --- INICIO DE LA CORRECCIÓN ---
-    # Comprobar si el dataframe de entrada está vacío
     if df_puntos.empty:
-        print("Advertencia: El DataFrame de entrada está vacío. Devolviendo un DataFrame vacío.")
-        # Devolver un dataframe con las columnas esperadas pero sin filas
-        columnas_finales = df_puntos.columns.tolist() + [
-            'elevacion', 'pendiente', 'orientacion', 'orientacion_cat', 
-            'ndvi', 'temperature', 'precipitation', 'wind_speed'
-        ]
-        return gpd.GeoDataFrame(columns=columnas_finales, crs=df_puntos.crs)
-    # --- FIN DE LA CORRECCIÓN ---
+        print("Advertencia: DataFrame de entrada vacío, no se asignarán variables.")
+        return df_puntos
 
     dataset = df_puntos.copy()
-    coords = np.array([(g.x, g.y) for g in dataset.geometry])
+    dataset['dia_del_ano'] = dataset['date'].dt.dayofyear
     
-    # --- INICIO DE LA CORRECCIÓN 2 ---
-    # Comprobar si se generaron coordenadas válidas
-    if coords.shape[0] == 0:
-        print("Advertencia: No se pudieron extraer coordenadas válidas de las geometrías. Devolviendo DataFrame.")
-        return dataset
-    # --- FIN DE LA CORRECCIÓN 2 ---
+    coords = np.array([(g.x, g.y) for g in dataset.geometry])
+    if coords.shape[0] == 0: return dataset
 
     # --- 3.1. Variables Topográficas ---
     print("Asignando variables topográficas...")
     dem = rioxarray.open_rasterio(dem_path).squeeze()
     dataset['elevacion'] = dem.sel(x=xr.DataArray(coords[:, 0], dims="points"), y=xr.DataArray(coords[:, 1], dims="points"), method="nearest").values
-    slope = xrs.slope(dem)
-    aspect = xrs.aspect(dem)
+    slope, aspect = xrs.slope(dem), xrs.aspect(dem)
     dataset['pendiente'] = slope.sel(x=xr.DataArray(coords[:, 0], dims="points"), y=xr.DataArray(coords[:, 1], dims="points"), method="nearest").values
     dataset['orientacion'] = aspect.sel(x=xr.DataArray(coords[:, 0], dims="points"), y=xr.DataArray(coords[:, 1], dims="points"), method="nearest").values
-    
-    bins_orientacion = [-1, 22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5, 361]
-    labels_orientacion = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
-    
-    dataset['orientacion_cat'] = pd.cut(
-        dataset['orientacion'], 
-        bins=bins_orientacion, 
-        labels=labels_orientacion, 
-        right=False,
-        ordered=False
-    )
+    bins = [-1, 22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5, 361]; labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
+    dataset['orientacion_cat'] = pd.cut(dataset['orientacion'], bins=bins, labels=labels, right=False, ordered=False)
     dataset['orientacion_cat'] = dataset['orientacion_cat'].cat.add_categories("Plano").fillna("Plano")
-    
-    # --- 3.2. Variable de Vegetación (NDVI) ---
+
+    # --- 3.2. Variable de Humedad (desde TIF) ---
+    print("Asignando Humedad Relativa...")
+    if os.path.exists(humedad_tif_path):
+        try:
+            humedad_raster = rioxarray.open_rasterio(humedad_tif_path).squeeze(drop=True).rio.reproject(dataset.crs)
+            dataset['humedad'] = humedad_raster.sel(x=xr.DataArray(coords[:, 0], dims="points"), y=xr.DataArray(coords[:, 1], dims="points"), method="nearest").values
+        except Exception as e:
+            print(f"ADVERTENCIA: No se pudo procesar el archivo de Humedad. Error: {e}. Asignando -1.")
+            dataset['humedad'] = -1
+    else:
+        print(f"ADVERTENCIA: No se encontró el archivo de Humedad en {humedad_tif_path}. Asignando -1.")
+        dataset['humedad'] = -1
+
+    # --- 3.3. Variable de Vegetación (NDVI) ---
     print("Asignando NDVI...")
+    # ... (la lógica de NDVI sigue igual) ...
     dataset['ndvi'] = np.nan
     for year in dataset['date'].dt.year.unique():
         ndvi_path = os.path.join(ndvi_folder, f"NDVI_{year}.tif")
         if os.path.exists(ndvi_path):
-            ndvi_raster = rioxarray.open_rasterio(ndvi_path).squeeze(drop=True)
-            if ndvi_raster.rio.crs != dataset.crs:
-                ndvi_raster = ndvi_raster.rio.reproject(dataset.crs)
-            
+            ndvi_raster = rioxarray.open_rasterio(ndvi_path).squeeze(drop=True).rio.reproject(dataset.crs)
             idx_year = dataset['date'].dt.year == year
-            # Comprobar que hay puntos para este año antes de proceder
             if idx_year.any():
                 coords_year = np.array([(g.x, g.y) for g in dataset[idx_year].geometry])
-                
-                ndvi_values = ndvi_raster.sel(x=xr.DataArray(coords_year[:, 0], dims="points"), y=xr.DataArray(coords_year[:, 1], dims="points"), method="nearest").values
-                dataset.loc[idx_year, 'ndvi'] = ndvi_values
+                dataset.loc[idx_year, 'ndvi'] = ndvi_raster.sel(x=xr.DataArray(coords_year[:, 0], dims="points"), y=xr.DataArray(coords_year[:, 1], dims="points"), method="nearest").values
 
-    # --- 3.3. Variables Meteorológicas (Giovanni) ---
+    # --- 3.4. Variables Meteorológicas (Giovanni) ---
     print("Asignando variables meteorológicas...")
-    dataset_sorted = dataset.sort_values('date')
-    # merge_asof requiere índices ordenados
-    merged_data = pd.merge_asof(
-        dataset_sorted,
-        weather_df,
-        left_on='date',
-        right_index=True,
-        direction='nearest' # Encuentra el registro de 3h más cercano
-    )
-    dataset = merged_data.sort_index()
+    dataset = pd.merge_asof(dataset.sort_values('date'), weather_df, left_on='date', right_index=True, direction='nearest').sort_index()
     
+    # --- 3.5. Características de Proximidad ---
+    print("Añadiendo características de proximidad...")
+    if os.path.exists(vias_shp_path):
+        vias_gdf = gpd.read_file(vias_shp_path).to_crs(dataset.crs)
+        dataset['dist_vias'] = dataset.geometry.distance(vias_gdf.union_all())
+    else:
+        dataset['dist_vias'] = -1
+
+    if os.path.exists(ciudades_shp_path):
+        ciudades_gdf = gpd.read_file(ciudades_shp_path).to_crs(dataset.crs)
+        dataset['dist_ciudades'] = dataset.geometry.distance(ciudades_gdf.union_all())
+    else:
+        dataset['dist_ciudades'] = -1
+
     print("Asignación de variables completada.")
     return dataset
 
 # --- Cargar datos de clima y ejecutar la asignación ---
 weather_data = load_giovanni_data(GIOVANNI_DIR)
-full_dataset = asignar_variables(sample, MERGED_DEM_PATH, NDVI_DIR, weather_data)
-
+full_dataset = asignar_variables(sample, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_TIF_PATH, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
 # ==============================================================================
 # 4. DEPURACIÓN Y PREPARACIÓN FINAL PARA EL MODELO
 # ==============================================================================
@@ -355,10 +356,24 @@ datos_depurados = full_dataset.dropna()
 print(f"\nRegistros después de depurar: {len(datos_depurados)}")
 
 # Seleccionar columnas finales
-columnas_modelo = [
-    'elevacion', 'pendiente', 'orientacion_cat', 'ndvi', 
-    'temperature', 'precipitation', 'wind_speed', 'fire'
+columnas_base = [
+    'elevacion', 'pendiente', 'orientacion_cat','humedad', 'ndvi', 
+    'temperature', 'precipitation', 'wind_speed'
 ]
+columnas_modelo = columnas_base + ['fire']
+# Añadir las nuevas características de proximidad SOLO SI existen
+if 'dist_vias' in datos_depurados.columns and datos_depurados['dist_vias'].nunique() > 1:
+    print("-> Característica 'dist_vias' encontrada y añadida.")
+    columnas_modelo.insert(-1, 'dist_vias')
+else:
+    print("ADVERTENCIA: 'dist_vias' no se encontró o no tiene variación. No se usará.")
+
+if 'dist_ciudades' in datos_depurados.columns and datos_depurados['dist_ciudades'].nunique() > 1:
+    print("-> Característica 'dist_ciudades' encontrada y añadida.")
+    columnas_modelo.insert(-1, 'dist_ciudades')
+else:
+    print("ADVERTENCIA: 'dist_ciudades' no se encontró o no tiene variación. No se usará.")
+
 datos_modelo = datos_depurados[columnas_modelo].copy()
 datos_modelo['fire'] = datos_modelo['fire'].astype(int)
 
@@ -498,7 +513,7 @@ else:
     fecha_prediccion = pd.to_datetime("2023-08-15")
     grid_en_area['date'] = fecha_prediccion
 
-    grid_con_variables_raw = asignar_variables(grid_en_area, MERGED_DEM_PATH, NDVI_DIR, weather_data)
+    grid_con_variables_raw = asignar_variables(sample, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_TIF_PATH, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
     
     # Eliminar filas que tengan algún valor nulo después de la asignación
     grid_con_variables = grid_con_variables_raw.dropna()
