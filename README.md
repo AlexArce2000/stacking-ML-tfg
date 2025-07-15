@@ -22,8 +22,9 @@ LogisticRegression.
 │   └── NDVI/            # Índice de vegetación de diferencia normalizada.
 ├── outputs/             
 ├── .gitignore           
-├── main.py              # Script principal que ejecuta todo el flujo: carga, preprocesa, entrena y predice.
 ├── clear_outputs.py     # Script de utilidad para limpiar la carpeta de resultados.
+├── focos_cordillera.py  # Script de utilidad para reporta lo que realmente sucedió.
+├── main.py              # Script principal que ejecuta todo el flujo: carga, preprocesa, entrena y predice.
 ├── requirements.txt     # Lista de librerías de Python necesarias.
 └── README.md            # Este archivo.
 
