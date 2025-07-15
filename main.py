@@ -43,7 +43,10 @@ from pathlib import Path
 
 # Para operaciones espaciales eficientes
 from shapely.geometry import Point, box
-
+# --- FIJAR SEMILLAS ALEATORIAS PARA LA REPRODUCIBILIDAD ---
+seed = 42
+np.random.seed(seed)
+os.environ['PYTHONHASHSEED'] = str(seed)
 print("Librerías cargadas exitosamente.")
 
 # --- Rutas a las carpetas de datos ---
