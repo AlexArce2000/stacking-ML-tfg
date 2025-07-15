@@ -81,7 +81,7 @@ def dibujar_incendios_por_fecha(csv_path, fecha_especifica, shp_area_estudio_pat
         plt.show()
 
 ruta_csv_incendios = "data/FOCOS/focos_cordillera_viirs.csv"
-fecha_a_dibujar = "2019-07-15"
+fecha_a_dibujar = "2023-01-01"
 ruta_shp_cordillera = "data/COORDILLERA/Departamento_Coordillera.shp"
 
 dibujar_incendios_por_fecha(

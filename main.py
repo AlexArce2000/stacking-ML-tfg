@@ -517,7 +517,7 @@ else:
     fecha_prediccion = pd.to_datetime("2023-01-01")
     grid_en_area['date'] = fecha_prediccion
 
-    grid_con_variables_raw = asignar_variables(sample, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_TIF_PATH, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
+    grid_con_variables_raw = asignar_variables(grid_en_area, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_TIF_PATH, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
     
     # Eliminar filas que tengan algún valor nulo después de la asignación
     grid_con_variables = grid_con_variables_raw.dropna()
@@ -550,8 +550,8 @@ else:
             interpolated_grid.T, 
             extent=(minx, maxx, miny, maxy), 
             origin='lower', 
-            cmap='YlOrRd', # <--- ¡CAMBIO REALIZADO AQUÍ!
-            alpha=0.9,      # Puedes ajustar la transparencia si quieres
+            cmap='YlOrRd', 
+            alpha=0.9,     
             vmin=vmin,      
             vmax=vmax       
         )
