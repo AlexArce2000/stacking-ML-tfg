@@ -1,6 +1,7 @@
 # TFG - Machine Learning
 
 **Datos:** 01-01-2018 a 01-01-2024
+
 **Descarga de datos:** https://anonfile.link/vvQNuCfE92U/data_rar
 
 *Modelado:* 
@@ -8,6 +9,26 @@ Stacking (RF + SVM + KNN)
 
 *Meta-Modelo:* 
 LogisticRegression.
+
+## Estructura del proyecto
+
+```
+├── data/                # Carpeta ignorada por Git. Contiene los datos de entrada.
+│   ├── COORDILLERA/     # Datos geoespaciales relacionados con la cordillera.
+│   ├── DEM/             # Datos del modelo digital de elevación (DEM).
+│   ├── FIRMS/           # Datos de incendios (FIRMS).
+│   ├── Giovanni NASA/   # Datos obtenidos de la NASA (Giovanni).
+│   └── NDVI/            # Índice de vegetación de diferencia normalizada.
+├── outputs/             
+├── .gitignore           
+├── main.py              # Script principal que ejecuta todo el flujo: carga, preprocesa, entrena y predice.
+├── clear_outputs.py     # Script de utilidad para limpiar la carpeta de resultados.
+├── requirements.txt     # Lista de librerías de Python necesarias.
+└── README.md            # Este archivo.
+
+```
+
+
 ### Tabla de Variables del Modelo
 
 #### **Variable Objetivo (Target)**
@@ -45,17 +66,19 @@ LogisticRegression.
 
 
 
-### Uso:
+### Uso
 
-* Crear un entorno virtual
-* Instalar los requerimientos:
-```
-pip install -r requirements.txt
-``` 
-* ejecutar:
-```
-python main.py
-```
+1.  **Descargar los datos**
+
+2.  **Preparar la carpeta de datos:**
+    Descomprime el archivo `data.rar` y asegurar de que el contenido quede dentro de una carpeta llamada `data` en la raíz del proyecto. 
+
+3.  **Ejecutar el modelo:**
+    Para ejecutar el pipeline completo (desde la carga de datos hasta la generación del mapa de riesgo), ejecutar:
+    ```bash
+    python main.py
+    ```
+    Los resultados, incluyendo el reporte de clasificación y el mapa de riesgo, se guardarán en una nueva carpeta con fecha y hora dentro de `outputs/`.
 
 
 ### TFG (posible título): 
