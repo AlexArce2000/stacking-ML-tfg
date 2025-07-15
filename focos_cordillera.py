@@ -72,7 +72,7 @@ def dibujar_incendios_por_fecha(csv_path, fecha_especifica, shp_area_estudio_pat
         ax.legend()
         plt.tight_layout()
 
-        output_dir = "outputs_focos"
+        output_dir = "outputs_focos_reales"
         os.makedirs(output_dir, exist_ok=True)
         output_filename = f"mapa_incendios_{fecha_especifica}.png"
         output_path = os.path.join(output_dir, output_filename)
