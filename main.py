@@ -57,6 +57,7 @@ HUMEDAD_TIF_PATH = os.path.join(GIOVANNI_DIR, "Humedad", "Humedad_Cordillera.tif
 DEPARTAMENTO_SHP_PATH = "data/COORDILLERA/Departamento_Coordillera.shp"
 VIAS_SHP_PATH = "data/COORDILLERA/Vias_principales_Coordillera.shp"
 CIUDADES_SHP_PATH = "data/COORDILLERA/Ciudades_Coordillera.shp"
+DISTRITOS_SHP_PATH = "data/COORDILLERA/Distritos_Coordillera.shp"
 
 # --- Crear carpeta de salida para los resultados ---
 TIMESTAMP = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -510,7 +511,7 @@ else:
     print(f"Se generaron {len(grid_en_area)} puntos en la rejilla para la predicción.")
     
     # --- 6.2. Asignar fecha y variables a la rejilla ---
-    fecha_prediccion = pd.to_datetime("2023-08-15")
+    fecha_prediccion = pd.to_datetime("2023-01-01")
     grid_en_area['date'] = fecha_prediccion
 
     grid_con_variables_raw = asignar_variables(sample, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_TIF_PATH, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
@@ -575,11 +576,37 @@ else:
 
         # --- 4. Dibujar contornos ---
         area_estudio_gdf.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=1) 
-        distritos_shp_path = "data/COORDILLERA/Distritos_Coordillera.shp"
-        if os.path.exists(distritos_shp_path):
-            distritos_gdf = gpd.read_file(distritos_shp_path).to_crs(area_estudio_gdf.crs)
+        if os.path.exists(DISTRITOS_SHP_PATH):
+            distritos_gdf = gpd.read_file(DISTRITOS_SHP_PATH).to_crs(area_estudio_gdf.crs)
             distritos_gdf.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=0.5, alpha=0.6)
+        # --- AÑADIR CIUDADES Y SUS NOMBRES SE VE FEO POR ESO COMENTÉ---
+        # if os.path.exists(CIUDADES_SHP_PATH):
+        #     ciudades_gdf = gpd.read_file(CIUDADES_SHP_PATH).to_crs(area_estudio_gdf.crs)
+            
+        #     # 1. Dibujar un punto para cada ciudad
+        #     ciudades_gdf.plot(
+        #         ax=ax, 
+        #         marker='o',
+        #         color="white",
+        #         edgecolor="black",
+        #         markersize=30
+        #     )
 
+        #     # 2. Escribir el nombre al lado de cada punto
+        #     if "DIST_DESC_" in ciudades_gdf.columns:
+        #         for x, y, label in zip(ciudades_gdf.geometry.x, ciudades_gdf.geometry.y, ciudades_gdf["DIST_DESC_"]):
+        #             ax.text(
+        #                 x + 0.005,  # Desplazamiento a la derecha
+        #                 y,
+        #                 label.title(), # Pone el texto en formato de título
+        #                 fontsize=9,
+        #                 ha='left',
+        #                 va='center',
+        #                 bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', pad=0.2) # Fondo para legibilidad
+        #             )
+        #     else:
+        #         print("ADVERTENCIA: No se encontró la columna 'DIST_DESC_' para las etiquetas de ciudades.")
+        
         # --- 5. Configuración final ---
         ax.set_title(f"Mapa de Riesgo de Incendio para Cordillera\nFecha: {fecha_prediccion.date()}", fontsize=18)
         ax.set_xlabel("Longitud")
