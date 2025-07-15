@@ -17,6 +17,7 @@ LogisticRegression.
 │   ├── COORDILLERA/     # Datos geoespaciales relacionados con la cordillera.
 │   ├── DEM/             # Datos del modelo digital de elevación (DEM).
 │   ├── FIRMS/           # Datos de incendios (FIRMS).
+|   ├── FOCOS/           # Datos de incendios reales
 │   ├── Giovanni NASA/   # Datos obtenidos de la NASA (Giovanni).
 │   └── NDVI/            # Índice de vegetación de diferencia normalizada.
 ├── outputs/             
@@ -80,6 +81,8 @@ LogisticRegression.
     ```
     Los resultados, incluyendo el reporte de clasificación y el mapa de riesgo, se guardarán en una nueva carpeta con fecha y hora dentro de `outputs/`.
 
+
+Nota: Agregado el algoritmo verficador de la realidad `focos_cordillera.py`, que reporta lo que realmente sucedió. 
 
 ### TFG (posible título): 
 Predicción de riesgo de incendios forestales en el
