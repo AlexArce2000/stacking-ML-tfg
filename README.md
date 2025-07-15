@@ -18,15 +18,19 @@ LogisticRegression.
 
 ---
 #### **Variables Predictoras (Features)**
-|    **Categoría**   | **Nombre de la Variable** | **Descripción**                                                            | **Tipo**   | **Fuente de Datos**                      | **Formato / Extensión** | **Unidad / Valores Ejemplo**      |
-| :----------------: | :------------------------ | -------------------------------------------------------------------------- | ---------- | ---------------------------------------- | ----------------------- | --------------------------------- |
-|  **Topográficas**  | `elevacion`               | Altura sobre el nivel del mar.                                             | Numérica   | Modelo Digital de Elevación (SRTM, ALOS) | `.tif`                  | Metros (m)                        |
-|                    | `pendiente`               | Inclinación del terreno; influye en la velocidad de propagación del fuego. | Numérica   | Derivado de `elevacion`                  | `.tif`                  | Grados (°)                        |
-|                    | `orientacion_cat`         | Dirección cardinal de la ladera.                                           | Categórica | Derivado de `elevacion`                  | `.tif`                  | N, NE, E, SE, S, SW, W, NW, Plano |
-|   **Vegetación**   | `ndvi`                    | Índice de vegetación que representa la densidad y salud del combustible.   | Numérica   | Imágenes satelitales (MODIS, Landsat)    | `.tif`                  | Rango: -1 a +1                    |
-| **Meteorológicas** | `temperature`             | Temperatura del aire; afecta la sequedad del combustible.                  | Numérica   | Giovanni (NASA)                          | `.csv`                  | °C                                |
-|                    | `precipitation`           | Precipitación; reduce el riesgo al humedecer la vegetación.                | Numérica   | Giovanni (NASA)                          | `.csv`                  | mm/hora                           |
-|                    | `wind_speed`              | Velocidad del viento; influye en la propagación del fuego.                 | Numérica   | Giovanni (NASA)                          | `.csv`                  | m/s                               |
+| **Categoría** | **Nombre de la Variable** | **Descripción** | **Tipo** | **Fuente de Datos** | **Formato / Extensión** | **Unidad / Valores Ejemplo** |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Topográficas** | `elevacion` | Altura sobre el nivel del mar. | Numérica | Modelo Digital de Elevación (SRTM, ALOS) | `.tif` | Metros (m) |
+| | `pendiente` | Inclinación del terreno; influye en la velocidad de propagación del fuego. | Numérica | Derivado de `elevacion` | `.tif` | Grados (°) |
+| | `orientacion_cat` | Dirección cardinal hacia la que se inclina la ladera. | Categórica | Derivado de `elevacion` | `.tif` | N, NE, E, SE, S, SW, W, NW, Plano |
+| **Vegetación** | `ndvi` | Índice de Vegetación de Diferencia Normalizada. Representa la densidad y salud del combustible vegetal. | Numérica | Imágenes satelitales (MODIS, Landsat) | `.tif` | Rango: -1 a +1 |
+| **Meteorológicas** | `temperature` | Temperatura del aire; afecta la sequedad del combustible. | Numérica | Giovanni (NASA) | `.csv` | Grados Celsius (°C) |
+| | `precipitation` | Precipitación acumulada; reduce el riesgo al humedecer la vegetación y el suelo. | Numérica | Giovanni (NASA) | `.csv` | mm/hora |
+| | `wind_speed` | Velocidad del viento; influye en la dirección e intensidad de la propagación del fuego. | Numérica | Giovanni (NASA) | `.csv` | Metros por segundo (m/s) |
+| | `humedad` | Humedad relativa del aire. Valores altos dificultan la ignición y propagación del fuego. | Numérica | Giovanni (NASA) | `.tif` | Porcentaje (%) |
+| **Proximidad / Antropogénica** | `dist_vias` | Distancia a la vía de comunicación principal más cercana. Puede indicar accesibilidad o fuente de ignición humana. | Numérica | Derivado de Shapefile de Vías | `.shp` | Metros (m) |
+| | `dist_ciudades` | Distancia al centro poblado o ciudad más cercana. Relacionado con la actividad humana y posibles igniciones. | Numérica | Derivado de Shapefile de Ciudades | `.shp` | Metros (m) |
+
 
 #### **Variables Intermedias (No usadas directamente en el modelo final, pero cruciales para la creación del dataset)**
 
