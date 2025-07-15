@@ -9,3 +9,4 @@ xarray
 xarray-spatial
 dask
 pyarrow
+contextily
