@@ -1,6 +1,6 @@
 # TFG - Machine Learning
 
-**Datos:** 01-01-2018 a 01-01-2024
+**Datos:** 01-01-2018 a 31-12-2023
 
 **Descarga de datos:** https://anonfile.link/s/05W5Fezmypw
 
