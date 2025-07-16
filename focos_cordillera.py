@@ -63,7 +63,7 @@ def dibujar_incendios_por_fecha(csv_path, fecha_especifica, shp_area_estudio_pat
             except Exception as e:
                 print(f"Advertencia: No se pudo cargar el shapefile del área de estudio: {e}")
 
-        ax.set_title(f"Focos de Incendio Detectados el {fecha_especifica}", fontsize=16)
+        ax.set_title(f"Focos de Incendio Detectados el {fecha_especifica}", fontsize=18)
 
     print("Añadiendo mapa base de calles y geografía...")
     if 'ax' in locals():
@@ -81,7 +81,7 @@ def dibujar_incendios_por_fecha(csv_path, fecha_especifica, shp_area_estudio_pat
         plt.show()
 
 ruta_csv_incendios = "data/FOCOS/focos_cordillera_viirs.csv"
-fecha_a_dibujar = "2023-01-01"
+fecha_a_dibujar = "2023-08-14"
 ruta_shp_cordillera = "data/COORDILLERA/Departamento_Coordillera.shp"
 
 dibujar_incendios_por_fecha(

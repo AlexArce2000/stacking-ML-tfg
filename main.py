@@ -56,7 +56,7 @@ FIRMS_DIR = os.path.join(DATA_DIR, "FIRMS")
 GIOVANNI_DIR = os.path.join(DATA_DIR, "Giovanni NASA")
 NDVI_DIR = os.path.join(DATA_DIR, "NDVI")
 MERGED_DEM_PATH = os.path.join(DEM_DIR, "merged_dem.tif")
-HUMEDAD_TIF_PATH = os.path.join(GIOVANNI_DIR, "Humedad", "Humedad_Cordillera.tif")
+HUMEDAD_DIR = os.path.join(GIOVANNI_DIR, "Humedad")
 DEPARTAMENTO_SHP_PATH = "data/COORDILLERA/Departamento_Coordillera.shp"
 VIAS_SHP_PATH = "data/COORDILLERA/Vias_principales_Coordillera.shp"
 CIUDADES_SHP_PATH = "data/COORDILLERA/Ciudades_Coordillera.shp"
@@ -129,9 +129,12 @@ def load_firms_data(firms_folder, study_area_geom, crs):
     return gdf_incendios[['date', 'geometry', 'fire']]
 
 
-# ESTA ES LA NUEVA VERSIÓN QUE DEBES PEGAR EN TU main.py
 def load_giovanni_data(giovanni_folder):
-    """Carga y procesa los datos de series de tiempo de Giovanni de forma robusta."""
+    """
+    Carga y procesa TODOS los archivos de series de tiempo de Giovanni de forma robusta.
+    Busca en las subcarpetas (Precipitation, Temperature, Wind), concatena los datos
+    de múltiples archivos si existen y los une en un único DataFrame.
+    """
     print("Cargando datos meteorológicos de Giovanni NASA...")
 
     def parse_giovanni_file(filepath, var_name):
@@ -153,10 +156,10 @@ def load_giovanni_data(giovanni_folder):
 
             df = pd.read_csv(filepath, skiprows=skip)
             
-            df = df.rename(columns={df.columns[0]: 'datetime'})
+            # Renombrar columnas de forma segura
+            df = df.rename(columns={df.columns[0]: 'datetime', df.columns[1]: var_name})
             
-            df = df.rename(columns={df.columns[1]: var_name})
-            
+            # Asegurarse de que solo queden las columnas necesarias
             df = df[['datetime', var_name]]
             
             df['datetime'] = pd.to_datetime(df['datetime'])
@@ -167,28 +170,48 @@ def load_giovanni_data(giovanni_folder):
             print(f"Ocurrió un error al procesar el archivo {filepath}: {e}")
             return None
 
-    precip_files = glob.glob(os.path.join(giovanni_folder, "Precipitation", "*"))
-    temp_files = glob.glob(os.path.join(giovanni_folder, "Temperature", "*"))
-    wind_files = glob.glob(os.path.join(giovanni_folder, "Wind", "*"))
+    # Mapeo de subcarpetas a nombres de variables
+    subfolders_map = {
+        "Precipitation": "precipitation",
+        "Temperature": "temperature",
+        "Wind": "wind_speed"
+    }
+    
+    all_weather_dfs = []
 
-    if not precip_files: raise FileNotFoundError("No se encontró archivo de precipitación.")
-    if not temp_files: raise FileNotFoundError("No se encontró archivo de temperatura.")
-    if not wind_files: raise FileNotFoundError("No se encontró archivo de viento.")
+    for folder, var_name in subfolders_map.items():
+        folder_path = os.path.join(giovanni_folder, folder)
+        files = glob.glob(os.path.join(folder_path, "*"))
 
-    # Se usa el primer archivo encontrado en cada carpeta
-    precip_df = parse_giovanni_file(precip_files[0], 'precipitation')
-    temp_df = parse_giovanni_file(temp_files[0], 'temperature')
-    wind_df = parse_giovanni_file(wind_files[0], 'wind_speed')
+        if not files:
+            raise FileNotFoundError(f"No se encontraron archivos en la carpeta: {folder_path}")
+        
+        print(f"Procesando {len(files)} archivo(s) para '{var_name}'...")
+        
+        # Parsear todos los archivos para la variable actual
+        df_list = [parse_giovanni_file(f, var_name) for f in files]
+        
+        # Filtrar los None si algún archivo falló y concatenar
+        valid_dfs = [df for df in df_list if df is not None]
+        if not valid_dfs:
+            raise ValueError(f"No se pudo procesar ningún archivo para la variable '{var_name}'.")
+            
+        full_var_df = pd.concat(valid_dfs)
+        all_weather_dfs.append(full_var_df)
 
-    # Comprobar que los dataframes se leyeron correctamente
-    if precip_df is None or temp_df is None or wind_df is None:
-        raise ValueError("No se pudieron cargar todos los archivos meteorológicos. Revisa los errores anteriores.")
+    # Comprobar que tenemos datos para todas las variables
+    if len(all_weather_dfs) != len(subfolders_map):
+        raise ValueError("No se pudieron cargar todas las variables meteorológicas. Revisa los errores anteriores.")
     
     # Unir los 3 dataframes por su índice de fecha
-    weather_df = precip_df.join(temp_df, how='outer').join(wind_df, how='outer')
+    # El primer df es la base, y se le unen los demás
+    weather_df = all_weather_dfs[0].join(all_weather_dfs[1:], how='outer')
     weather_df = weather_df.sort_index()
     
-    print("Datos meteorológicos cargados y combinados.")
+    # Rellenar posibles huecos con el método de la última observación válida
+    weather_df = weather_df.fillna(method='ffill').fillna(method='bfill')
+    
+    print("Datos meteorológicos de todos los archivos cargados y combinados exitosamente.")
     return weather_df
 # ==============================================================================
 # 2. GENERACIÓN DE LA MUESTRA
@@ -267,14 +290,10 @@ print(sample['fire'].value_counts())
 # 3. ASIGNACIÓN DE VARIABLES A LA MUESTRA
 # ==============================================================================
 
-# ==============================================================================
-# 3. ASIGNACIÓN DE VARIABLES A LA MUESTRA
-# ==============================================================================
-
-def asignar_variables(df_puntos, dem_path, ndvi_folder, weather_df, humedad_tif_path, vias_shp_path, ciudades_shp_path):
+def asignar_variables(df_puntos, dem_path, ndvi_folder, weather_df, humedad_folder, vias_shp_path, ciudades_shp_path):
     """
     Asigna TODAS las variables predictoras (topográficas, vegetación, clima, humedad y proximidad)
-    a un GeoDataFrame de puntos con fechas.
+    a un GeoDataFrame de puntos con fechas. La humedad y el NDVI se cargan por año.
     """
     print("\n--- INICIANDO FASE DE ASIGNACIÓN DE VARIABLES ---")
     
@@ -299,31 +318,36 @@ def asignar_variables(df_puntos, dem_path, ndvi_folder, weather_df, humedad_tif_
     dataset['orientacion_cat'] = pd.cut(dataset['orientacion'], bins=bins, labels=labels, right=False, ordered=False)
     dataset['orientacion_cat'] = dataset['orientacion_cat'].cat.add_categories("Plano").fillna("Plano")
 
-    # --- 3.2. Variable de Humedad (desde TIF) ---
-    print("Asignando Humedad Relativa...")
-    if os.path.exists(humedad_tif_path):
-        try:
+    # --- 3.2. Variable de Humedad (desde TIF por año) ---
+    print("Asignando Humedad Relativa por año...")
+    dataset['humedad'] = np.nan # Inicializar columna
+    for year in dataset['date'].dt.year.unique():
+        humedad_tif_path = os.path.join(humedad_folder, f"HumedadRelativa_{year}.tif")
+        if os.path.exists(humedad_tif_path):
+            print(f"  ... cargando {humedad_tif_path}")
             humedad_raster = rioxarray.open_rasterio(humedad_tif_path).squeeze(drop=True).rio.reproject(dataset.crs)
-            dataset['humedad'] = humedad_raster.sel(x=xr.DataArray(coords[:, 0], dims="points"), y=xr.DataArray(coords[:, 1], dims="points"), method="nearest").values
-        except Exception as e:
-            print(f"ADVERTENCIA: No se pudo procesar el archivo de Humedad. Error: {e}. Asignando -1.")
-            dataset['humedad'] = -1
-    else:
-        print(f"ADVERTENCIA: No se encontró el archivo de Humedad en {humedad_tif_path}. Asignando -1.")
-        dataset['humedad'] = -1
+            idx_year = dataset['date'].dt.year == year
+            if idx_year.any():
+                coords_year = np.array([(g.x, g.y) for g in dataset[idx_year].geometry])
+                dataset.loc[idx_year, 'humedad'] = humedad_raster.sel(x=xr.DataArray(coords_year[:, 0], dims="points"), y=xr.DataArray(coords_year[:, 1], dims="points"), method="nearest").values
+        else:
+            print(f"ADVERTENCIA: No se encontró el archivo de Humedad para el año {year} en {humedad_tif_path}.")
 
     # --- 3.3. Variable de Vegetación (NDVI) ---
-    print("Asignando NDVI...")
-    # ... (la lógica de NDVI sigue igual) ...
+    print("Asignando NDVI por año...")
     dataset['ndvi'] = np.nan
     for year in dataset['date'].dt.year.unique():
         ndvi_path = os.path.join(ndvi_folder, f"NDVI_{year}.tif")
         if os.path.exists(ndvi_path):
+            print(f"  ... cargando {ndvi_path}")
             ndvi_raster = rioxarray.open_rasterio(ndvi_path).squeeze(drop=True).rio.reproject(dataset.crs)
             idx_year = dataset['date'].dt.year == year
             if idx_year.any():
                 coords_year = np.array([(g.x, g.y) for g in dataset[idx_year].geometry])
                 dataset.loc[idx_year, 'ndvi'] = ndvi_raster.sel(x=xr.DataArray(coords_year[:, 0], dims="points"), y=xr.DataArray(coords_year[:, 1], dims="points"), method="nearest").values
+        else:
+             print(f"ADVERTENCIA: No se encontró el archivo NDVI para el año {year} en {ndvi_path}.")
+
 
     # --- 3.4. Variables Meteorológicas (Giovanni) ---
     print("Asignando variables meteorológicas...")
@@ -348,7 +372,7 @@ def asignar_variables(df_puntos, dem_path, ndvi_folder, weather_df, humedad_tif_
 
 # --- Cargar datos de clima y ejecutar la asignación ---
 weather_data = load_giovanni_data(GIOVANNI_DIR)
-full_dataset = asignar_variables(sample, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_TIF_PATH, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
+full_dataset = asignar_variables(sample, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_DIR, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
 # ==============================================================================
 # 4. DEPURACIÓN Y PREPARACIÓN FINAL PARA EL MODELO
 # ==============================================================================
@@ -514,10 +538,10 @@ else:
     print(f"Se generaron {len(grid_en_area)} puntos en la rejilla para la predicción.")
     
     # --- 6.2. Asignar fecha y variables a la rejilla ---
-    fecha_prediccion = pd.to_datetime("2023-01-01")
+    fecha_prediccion = pd.to_datetime("2023-08-14")
     grid_en_area['date'] = fecha_prediccion
 
-    grid_con_variables_raw = asignar_variables(grid_en_area, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_TIF_PATH, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
+    grid_con_variables_raw = asignar_variables(grid_en_area, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_DIR, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
     
     # Eliminar filas que tengan algún valor nulo después de la asignación
     grid_con_variables = grid_con_variables_raw.dropna()
@@ -557,8 +581,6 @@ else:
         )
         
         # --- 3. Enmascarar el mapa de calor ---
-        import matplotlib.path as mpath
-        from matplotlib.patches import PathPatch
         
         union_poly = area_estudio_gdf.union_all()
         path_verts, path_codes = [], []
