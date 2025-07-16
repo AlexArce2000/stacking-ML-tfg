@@ -2,7 +2,7 @@
 
 **Datos:** 01-01-2018 a 01-01-2024
 
-**Descarga de datos:** https://anonfile.link/vvQNuCfE92U/data_rar
+**Descarga de datos:** https://anonfile.link/s/05W5Fezmypw
 
 *Modelado:* 
 Stacking (RF + SVM + KNN) 
