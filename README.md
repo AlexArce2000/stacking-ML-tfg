@@ -19,6 +19,10 @@ LogisticRegression.
 │   ├── FIRMS/           # Datos de incendios (FIRMS).
 |   ├── FOCOS/           # Datos de incendios reales
 │   ├── Giovanni NASA/   # Datos obtenidos de la NASA (Giovanni).
+│   │   ├── Humedad/       # Datos de humedad relativa.
+│   │   ├── Precipitation/ # Datos de precipitación.
+│   │   ├── Temperature/   # Datos de temperatura del aire.
+│   │   └── Wind/          # Datos de velocidad del viento.
 │   └── NDVI/            # Índice de vegetación de diferencia normalizada.
 ├── outputs/             
 ├── .gitignore           
