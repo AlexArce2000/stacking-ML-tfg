@@ -218,8 +218,6 @@ def load_giovanni_data(giovanni_folder):
 # ==============================================================================
 print("\n--- INICIANDO FASE DE PREPARACIÓN DE DATOS ---")
 
-DEPARTAMENTO_SHP_PATH = "data/COORDILLERA/Departamento_Coordillera.shp" 
-
 # --- 2.1. Definir el área de estudio a partir del SHAPEFILE ---
 print(f"Cargando área de estudio desde: {DEPARTAMENTO_SHP_PATH}")
 try:

@@ -2,7 +2,7 @@
 
 **Datos:** 01-01-2018 a 31-12-2023
 
-**Descarga de datos:** https://anonfile.link/s/05W5Fezmypw
+**Descarga de datos:** https://anonfile.link/s/VTlo83nPDu5
 
 *Modelado:* 
 Stacking (RF + SVM + KNN) 
@@ -28,6 +28,7 @@ LogisticRegression.
 ├── .gitignore           
 ├── clear_outputs.py     # Script de utilidad para limpiar la carpeta de resultados.
 ├── focos_cordillera.py  # Script de utilidad para reporta lo que realmente sucedió.
+├── focos_cordillera_historico_completo.py  # Script de utilidad para reporta el total de incendios 2018-2023.
 ├── main.py              # Script principal que ejecuta todo el flujo: carga, preprocesa, entrena y predice.
 ├── requirements.txt     # Lista de librerías de Python necesarias.
 └── README.md            # Este archivo.
