@@ -353,15 +353,18 @@ def asignar_variables(df_puntos, dem_path, ndvi_folder, weather_df, humedad_fold
     
     # --- 3.5. Características de Proximidad ---
     print("Añadiendo características de proximidad...")
+    projected_crs = "EPSG:31981"
+    dataset_proj = dataset.to_crs(projected_crs)
+
     if os.path.exists(vias_shp_path):
-        vias_gdf = gpd.read_file(vias_shp_path).to_crs(dataset.crs)
-        dataset['dist_vias'] = dataset.geometry.distance(vias_gdf.union_all())
+        vias_gdf = gpd.read_file(vias_shp_path).to_crs(projected_crs)
+        dataset['dist_vias'] = dataset_proj.geometry.distance(vias_gdf.union_all())
     else:
         dataset['dist_vias'] = -1
 
     if os.path.exists(ciudades_shp_path):
-        ciudades_gdf = gpd.read_file(ciudades_shp_path).to_crs(dataset.crs)
-        dataset['dist_ciudades'] = dataset.geometry.distance(ciudades_gdf.union_all())
+        ciudades_gdf = gpd.read_file(ciudades_shp_path).to_crs(projected_crs)
+        dataset['dist_ciudades'] = dataset_proj.geometry.distance(ciudades_gdf.union_all())
     else:
         dataset['dist_ciudades'] = -1
 
@@ -536,7 +539,7 @@ else:
     print(f"Se generaron {len(grid_en_area)} puntos en la rejilla para la predicción.")
     
     # --- 6.2. Asignar fecha y variables a la rejilla ---
-    fecha_prediccion = pd.to_datetime("2023-08-14")
+    fecha_prediccion = pd.to_datetime("2025-08-14")
     grid_en_area['date'] = fecha_prediccion
 
     grid_con_variables_raw = asignar_variables(grid_en_area, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_DIR, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
