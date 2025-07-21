@@ -8,8 +8,8 @@ import os
 import re
 from datetime import datetime
 from pathlib import Path
-import shap # <-- NUEVA IMPORTACIÓN
-
+import shap 
+import io
 # Para datos raster
 import rasterio
 from rasterio.merge import merge
@@ -317,6 +317,21 @@ datos_modelo = datos_depurados[columnas_modelo].copy()
 datos_modelo['cobertura'] = datos_modelo['cobertura'].astype('category')
 print("\nInfo del dataset final:\n"); datos_modelo.info()
 print("\nVista previa del dataset final:\n", datos_modelo.head())
+buffer = io.StringIO()
+datos_modelo.info(buf=buffer)
+info_string = buffer.getvalue()
+head_string = datos_modelo.head().to_string()
+ruta_resumen_dataset = OUTPUT_DIR / "dataset_summary.txt"
+with open(ruta_resumen_dataset, "w") as f:
+    f.write("=========================================\n")
+    f.write(" RESUMEN DEL DATASET FINAL (datos_modelo)\n")
+    f.write("=========================================\n\n")
+    f.write("--- DataFrame .info() ---\n")
+    f.write(info_string)
+    f.write("\n\n--- DataFrame .head() ---\n")
+    f.write(head_string)
+    f.write("\n")
+print(f"Resumen del dataset guardado en: {ruta_resumen_dataset}")
 
 # ==============================================================================
 # 5. MODELADO CON VALIDACIÓN ESPACIAL
@@ -512,8 +527,6 @@ plt.show()
 # ==============================================================================
 print("\n--- INICIANDO FASE DE EXPLICABILIDAD CON SHAP ---")
 
-import shap
-
 # --- Configuración para el modo de ejecución ---
 MODO_BORRADOR = False
 
@@ -614,7 +627,44 @@ else:
         X_grid = grid_con_variables[X_train.columns]
         prob_incendio = full_pipeline.predict_proba(X_grid)[:, 1]
         grid_con_variables['prob_incendio'] = prob_incendio
-
+        # >>> INICIO DEL CÓDIGO PARA EXPORTAR CSV <<<
+        
+        # 1. Añadir columnas de longitud y latitud para el formato CSV
+        # Extraemos las coordenadas X e Y de la columna de geometría.
+        grid_con_variables['longitud'] = grid_con_variables.geometry.x
+        grid_con_variables['latitud'] = grid_con_variables.geometry.y
+        
+        # 2. Seleccionar las columnas relevantes para el frontend
+        # Creamos una lista para que sea fácil añadir o quitar variables en el futuro.
+        columnas_para_exportar = [
+            'longitud', 
+            'latitud', 
+            'prob_incendio', 
+            'elevacion', 
+            'pendiente', 
+            'ndvi', 
+            'temperature', 
+            'precipitation', 
+            'humidity', 
+            'wind_speed',
+            'dist_vias', 
+            'dist_ciudades',
+            'cobertura',
+            'orientacion_cat'
+        ]
+        
+        # Creamos el DataFrame final con solo las columnas deseadas.
+        df_para_exportar = grid_con_variables[columnas_para_exportar]
+        
+        # 3. Definir la ruta y guardar el archivo CSV
+        # Usamos la variable OUTPUT_DIR que ya está definida para guardar en la carpeta correcta.
+        ruta_csv_riesgo = OUTPUT_DIR / "predicciones_riesgo.csv"
+        df_para_exportar.to_csv(ruta_csv_riesgo, index=False, float_format='%.6f')
+        
+        # 4. Imprimir un mensaje de confirmación en la terminal
+        print(f"\nTabla de predicciones guardada en: {ruta_csv_riesgo}")
+        
+        # >>> FIN DEL CÓDIGO PARA EXPORTAR CSV <<<
         fig, ax = plt.subplots(1, 1, figsize=(15, 10))
 
         # --- 1. Preparar datos para la interpolación ---
