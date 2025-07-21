@@ -186,7 +186,7 @@ def asignar_variables(df_puntos, dem_path, cobertura_folder, ndvi_mensual_folder
 
     print("Asignando variables meteorológicas...")
     dataset = dataset.sort_values('date')
-    dataset = pd.merge_asof(dataset, weather_df, left_on='date', right_index=True, direction='nearest')
+    dataset = pd.merge_asof(dataset, weather_df, left_on='date', right_index=True, direction='backward')
     
     print("Añadiendo características de proximidad...")
     projected_crs = "EPSG:31981"
@@ -206,11 +206,42 @@ area_estudio_gdf = gpd.read_file(DEPARTAMENTO_SHP_PATH)
 CRS_REFERENCE = area_estudio_gdf.crs.to_string()
 study_area_bounds = area_estudio_gdf.total_bounds
 study_area_polygon = area_estudio_gdf.union_all()
+print("\nCreando máscara de zonas inflamables a partir de la Cobertura del Suelo...")
+
+# Define la ruta a solo UNO de tus archivos de cobertura, el más reciente servirá.
+# Necesitamos la estructura, no los valores anuales.
+COBERTURA_PATH_BASE = COBERTURA_DIR / "Cobertura_Cordillera_2023.tif" # O el año que sea
+
+# Define las clases de cobertura que consideras "inflamables"
+CLASES_INFLAMABLES = [3.0, 6.0, 11.0, 12.0, 15.0]  # <-- ¡¡¡AJUSTA ESTOS VALORES!!! Son los que identificaste en QGIS.
+
+# Carga el raster
+with rasterio.open(COBERTURA_PATH_BASE) as src:
+    # Lee el raster como un array de numpy
+    cobertura_array = src.read(1)
+    transform = src.transform
+    crs = src.crs
+
+    # Crea una máscara booleana: True donde la clase es inflamable
+    mask = np.isin(cobertura_array, CLASES_INFLAMABLES)
+
+    # Vectoriza el raster: convierte los píxeles True en polígonos
+    # Esto crea una lista de (geometría, valor) para cada polígono de píxeles conectados
+    shapes = list(rasterio.features.shapes(mask.astype('uint8'), mask=mask, transform=transform))
+
+shapes_geojson = [{'geometry': geom, 'properties': {'value': val}} for geom, val in shapes]
+# 2. Ahora creamos el GeoDataFrame desde esta lista bien formateada
+zonas_inflamables_gdf = gpd.GeoDataFrame.from_features(shapes_geojson, crs=crs)
+
+# 3. La disolución funciona igual que antes
+zonas_inflamables_poligono = zonas_inflamables_gdf.unary_union
+
+print("Máscara de zonas inflamables creada exitosamente.")
 print(f"Área de estudio definida. CRS: {CRS_REFERENCE}")
 
 puntos_positivos = load_firms_data(FIRMS_DIR, study_area_polygon, CRS_REFERENCE)
 
-print("\nGenerando muestras negativas (no-incendios)...")
+print("\nGenerando muestras negativas (no-incendios) con muestreo de fondo inteligente...")
 n_negativos = len(puntos_positivos) if len(puntos_positivos) > 0 else 1000
 puntos_negativos_list = []
 minx, miny, maxx, maxy = study_area_bounds
@@ -219,30 +250,45 @@ dias_rango = (end_date - start_date).days
 projected_crs = "EPSG:31981"
 puntos_positivos_proj = puntos_positivos.to_crs(projected_crs)
 incendios_por_dia_proj = {d: g[['geometry']] for d, g in puntos_positivos_proj.groupby(puntos_positivos_proj['date'].dt.date)}
-
 intentos = 0
-max_intentos = n_negativos * 200 
+max_intentos = n_negativos * 500 # Aumentamos los intentos porque será más difícil encontrar puntos
 
 while len(puntos_negativos_list) < n_negativos:
     intentos += 1
     if intentos > max_intentos:
-        print(f"\nADVERTENCIA: Se superó el número máximo de intentos ({max_intentos}).")
+        print(f"\nADVERTENCIA: Se superó el número máximo de intentos ({max_intentos}). Se generaron {len(puntos_negativos_list)} puntos.")
         break
+    
+    # 1. Generar un punto aleatorio dentro de los límites del departamento
     random_point_geo = Point(np.random.uniform(minx, maxx), np.random.uniform(miny, maxy))
-    if not random_point_geo.within(study_area_polygon): continue
+    
+    # 2. PRIMER FILTRO: ¿Está el punto dentro del área de estudio Y dentro de una zona inflamable?
+    #    Usamos 'within' que es más rápido que la comprobación de cobertura del raster.
+    if not random_point_geo.within(zonas_inflamables_poligono):
+        continue  # Si no está en una zona inflamable, se descarta y se prueba de nuevo.
+
+    # 3. Si pasa el primer filtro, se procede a la comprobación de proximidad a incendios
     random_date = start_date + pd.to_timedelta(np.random.randint(0, dias_rango + 1), unit='d')
     es_valido = True
-    for i in range(-3, 4):
+    ventana_temporal_dias = 3
+    distancia_min_metros = 15000
+
+    # Proyectar el punto aleatorio a UTM para el cálculo de distancia
+    # Hacemos esto solo para los puntos que ya son candidatos, es más eficiente.
+    random_point_gds_proj = gpd.GeoSeries([random_point_geo], crs=CRS_REFERENCE).to_crs(projected_crs)
+
+    for i in range(-ventana_temporal_dias, ventana_temporal_dias + 1):
         check_date = (random_date + pd.to_timedelta(i, unit='d')).date()
         if check_date in incendios_por_dia_proj:
-            random_point_gds_proj = gpd.GeoSeries([random_point_geo], crs=CRS_REFERENCE).to_crs(projected_crs)
-            if incendios_por_dia_proj[check_date].distance(random_point_gds_proj.iloc[0]).min() < 15000:
-                es_valido = False; break
+            if incendios_por_dia_proj[check_date].distance(random_point_gds_proj.iloc[0]).min() < distancia_min_metros:
+                es_valido = False
+                break
+    
+    # 4. Si el punto es válido en ambos filtros, se añade a la lista
     if es_valido:
         puntos_negativos_list.append({'date': random_date, 'geometry': random_point_geo, 'fire': 0})
         if len(puntos_negativos_list) % 200 == 0:
             print(f"  ... {len(puntos_negativos_list)}/{n_negativos} puntos negativos generados. (Tasa de éxito: {len(puntos_negativos_list)/intentos:.2%})")
-
 if not puntos_negativos_list:
     print("\nERROR CRÍTICO: No se pudo generar ningún punto negativo.")
     exit()
@@ -282,19 +328,20 @@ En lugar de una división aleatoria, dividiremos el departamento geográficament
 Usaremos la longitud como criterio: entrenaremos con los datos del 70% occidental
 del departamento y probaremos con el 30% oriental.
 """
-# Añadimos las coordenadas 'x' al DataFrame para poder filtrar
-datos_modelo['x'] = datos_depurados.geometry.x
+# Añadimos las coordenadas 'y' al DataFrame para poder filtrar
+datos_modelo['y'] = datos_depurados.geometry.y
 
-# Calculamos el punto de corte (el percentil 70 de las longitudes)
-split_point = datos_modelo['x'].quantile(0.7)
+# Calculamos el punto de corte (el percentil 70 de las latitudes)
+split_point = datos_modelo['y'].quantile(0.7)
 
-# Creamos los conjuntos de entrenamiento y prueba
-train_df = datos_modelo[datos_modelo['x'] <= split_point]
-test_df = datos_modelo[datos_modelo['x'] > split_point]
+# Creamos los conjuntos de entrenamiento y prueba usando la columna 'y'
+train_df = datos_modelo[datos_modelo['y'] <= split_point]
+test_df = datos_modelo[datos_modelo['y'] > split_point]
 
-# Eliminar la columna 'x' que ya no necesitamos
-train_df = train_df.drop(columns=['x'])
-test_df = test_df.drop(columns=['x'])
+# Eliminar la columna 'y' que ya no necesitamos para el entrenamiento
+train_df = train_df.drop(columns=['y'])
+test_df = test_df.drop(columns=['y'])
+
 
 print(f"División espacial: {len(train_df)} muestras para entrenar, {len(test_df)} para probar.")
 
@@ -310,12 +357,12 @@ else:
     # --- 5.2. Pipeline de preprocesamiento (sin cambios) ---
     numeric_features = X_train.select_dtypes(include=np.number).columns.tolist()
     categorical_features = X_train.select_dtypes(include=['category', 'object']).columns.tolist()
-
+# Acá cambie
     preprocessor = ColumnTransformer(
         transformers=[
             ('num', StandardScaler(), numeric_features),
             ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)
-        ], remainder='passthrough')
+        ], remainder='drop')
 
     # --- 5.3. Definir y crear el modelo de Stacking (sin cambios) ---
     estimators = [
@@ -460,7 +507,86 @@ print(f"Gráfico de rendimiento guardado en: {plot_path}")
 # Mostrar el gráfico en pantalla
 plt.show()
 
+# ==============================================================================
+# 5.7. ANÁLISIS DE EXPLICABILIDAD 
+# ==============================================================================
+print("\n--- INICIANDO FASE DE EXPLICABILIDAD CON SHAP ---")
 
+import shap
+
+# --- Configuración para el modo de ejecución ---
+MODO_BORRADOR = False
+
+if MODO_BORRADOR:
+    print(">>> EJECUTANDO EN MODO BORRADOR (RÁPIDO) CON UNA MUESTRA PEQUEÑA <<<")
+    n_muestras_shap = 500
+else:
+    print(">>> EJECUTANDO EN MODO FINAL (LENTO) CON UNA MUESTRA MÁS GRANDE <<<")
+    n_muestras_shap = min(len(X_test), 2000) # Usar hasta 2000 muestras para el plot final
+
+
+# --- 5.7.1. Preparar datos y modelo ---
+
+# Extraemos el preprocesador y el modelo RandomForest ya entrenados
+preprocessor_trained = full_pipeline.named_steps['preprocessor']
+rf_model_trained = full_pipeline.named_steps['classifier'].estimators_[0]
+
+# Preprocesamos los datos de prueba
+X_test_processed = preprocessor_trained.transform(X_test)
+
+# Obtenemos los nombres de las características de forma segura
+feature_names = preprocessor_trained.get_feature_names_out()
+
+# Convertimos a DataFrame y tomamos nuestra muestra
+X_test_processed_df = pd.DataFrame(X_test_processed, columns=feature_names)
+X_test_sample_df = X_test_processed_df.sample(n=n_muestras_shap, random_state=seed)
+
+
+# --- 5.7.2. Entrenar Modelo Proxy, Crear Explicador y Calcular Explicaciones ---
+
+# Entrenamos un modelo proxy idéntico para asegurar compatibilidad total
+print("Entrenando un modelo Random Forest 'proxy' para el análisis SHAP...")
+rf_proxy_model = RandomForestClassifier(n_estimators=100, random_state=seed, n_jobs=-1)
+rf_proxy_model.fit(preprocessor_trained.transform(X_train), y_train)
+print("Modelo proxy entrenado.")
+
+# Creamos el explicador con el modelo proxy
+explainer = shap.TreeExplainer(rf_proxy_model)
+print("Explicador TreeExplainer de SHAP creado.")
+
+print(f"Calculando las explicaciones SHAP para {n_muestras_shap} muestras...")
+
+explanation_object = explainer(X_test_sample_df)
+print("Cálculo de explicaciones SHAP completado.")
+
+
+# --- 5.7.3. Generar y Guardar los Gráficos de Explicabilidad ---
+
+print("Generando gráficos de SHAP...")
+
+# Para un clasificador binario, el objeto Explanation tiene 3 dimensiones: (muestras, características, clases)
+# Queremos las explicaciones para la clase 1 ("Incendio").
+# Podemos acceder a ellas con la sintaxis de slicing: explanation_object[:,:,1]
+
+# A. Gráfico de Resumen (Beeswarm)
+plt.figure(figsize=(10, 8))
+shap.summary_plot(explanation_object[:,:,1], X_test_sample_df, plot_type="dot", show=False)
+plt.title("Impacto de las Características en la Predicción (Random Forest)", fontsize=16)
+plt.tight_layout()
+shap_summary_path = OUTPUT_DIR / "shap_summary_plot_rf.png"
+plt.savefig(shap_summary_path, dpi=300, bbox_inches='tight')
+print(f"Gráfico de resumen SHAP guardado en: {shap_summary_path}")
+plt.show()
+
+# B. Gráfico de Barras de Importancia Media
+plt.figure(figsize=(10, 8))
+shap.summary_plot(explanation_object[:,:,1], X_test_sample_df, plot_type="bar", show=False)
+plt.title("Importancia Media de las Características (Random Forest)", fontsize=16)
+plt.tight_layout()
+shap_bar_path = OUTPUT_DIR / "shap_bar_plot_rf.png"
+plt.savefig(shap_bar_path, dpi=300, bbox_inches='tight')
+print(f"Gráfico de barras SHAP guardado en: {shap_bar_path}")
+plt.show()
 # ==============================================================================
 # 6. APLICACIÓN: MAPA DE RIESGO
 # ==============================================================================
