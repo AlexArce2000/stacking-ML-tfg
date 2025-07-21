@@ -2,7 +2,7 @@
 
 **Datos:** 01-01-2018 a 31-12-2023
 
-**Descarga de datos:** https://anonfile.link/s/VTlo83nPDu5
+**Descarga de datos:** https://anonfile.link/s/VTlo83nPDu5 (falta actualizar)
 
 *Modelado:* 
 Stacking (RF + SVM + KNN) 
@@ -45,31 +45,38 @@ LogisticRegression.
 | **`fire`** | Indica si en un punto y fecha determinados ocurrió un incendio o no. | **Objetivo (Binaria)** | **Positivos:** FIRMS<br>**Negativos:** Muestreo aleatorio controlado | `.csv` | `1` (Incendio)<br>`0` (No Incendio) |
 
 ---
+---
+
+### **Tabla de Variables Actualizada**
+
 #### **Variables Predictoras (Features)**
+
 | **Categoría** | **Nombre de la Variable** | **Descripción** | **Tipo** | **Fuente de Datos** | **Formato / Extensión** | **Unidad / Valores Ejemplo** |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Topográficas** | `elevacion` | Altura sobre el nivel del mar. | Numérica | Modelo Digital de Elevación (SRTM, ALOS) | `.tif` | Metros (m) |
+| **Topográficas** | `elevacion` | Altura sobre el nivel del mar. | Numérica | Modelo Digital de Elevación (DEM) | `.tif` | Metros (m) |
 | | `pendiente` | Inclinación del terreno; influye en la velocidad de propagación del fuego. | Numérica | Derivado de `elevacion` | `.tif` | Grados (°) |
-| | `orientacion_cat` | Dirección cardinal hacia la que se inclina la ladera. | Categórica | Derivado de `elevacion` | `.tif` | N, NE, E, SE, S, SW, W, NW, Plano |
-| **Vegetación** | `ndvi` | Índice de Vegetación de Diferencia Normalizada. Representa la densidad y salud del combustible vegetal. | Numérica | Imágenes satelitales (MODIS, Landsat) | `.tif` | Rango: -1 a +1 |
-| **Meteorológicas** | `temperature` | Temperatura del aire; afecta la sequedad del combustible. | Numérica | Giovanni (NASA) | `.csv` | Grados Celsius (°C) |
-| | `precipitation` | Precipitación acumulada; reduce el riesgo al humedecer la vegetación y el suelo. | Numérica | Giovanni (NASA) | `.csv` | mm/hora |
-| | `wind_speed` | Velocidad del viento; influye en la dirección e intensidad de la propagación del fuego. | Numérica | Giovanni (NASA) | `.csv` | Metros por segundo (m/s) |
-| | `humedad` | Humedad relativa del aire. Valores altos dificultan la ignición y propagación del fuego. | Numérica | Giovanni (NASA) | `.tif` | Porcentaje (%) |
-| **Proximidad / Antropogénica** | `dist_vias` | Distancia a la vía de comunicación principal más cercana. Puede indicar accesibilidad o fuente de ignición humana. | Numérica | Derivado de Shapefile de Vías | `.shp` | Metros (m) |
-| | `dist_ciudades` | Distancia al centro poblado o ciudad más cercana. Relacionado con la actividad humana y posibles igniciones. | Numérica | Derivado de Shapefile de Ciudades | `.shp` | Metros (m) |
-
+| | `orientacion_cat` | Dirección cardinal hacia la que se inclina la ladera (aspecto). | Categórica | Derivado de `elevacion` | `.tif` | N, NE, E, SE, S, SW, W, NW, Plano |
+| **Uso del Suelo**| `cobertura` | Tipo de cobertura del suelo (bosque, pastizal, etc.). Factor clave del tipo y cantidad de combustible. | Categórica | Clasificación de Cobertura del Suelo | `.tif` | Códigos de clase (ej: 3.0, 11.0, 12.0) |
+| **Vegetación** | `ndvi` | Índice de Vegetación de Diferencia Normalizada. Representa la densidad y salud del combustible vegetal. | Numérica | Imágenes satelitales (MODIS vía GEE) | `.tif` | Rango normalizado: -1 a +1 |
+| **Meteorológicas**| `temperature` | Temperatura media diaria del aire. | Numérica | Datos Climáticos (ERA5 vía GEE) | `.csv` | Grados Celsius (°C) |
+| | `precipitation` | Precipitación total diaria. | Numérica | Datos Climáticos (ERA5 vía GEE) | `.csv` | Milímetros (mm/día) |
+| | `wind_speed` | Velocidad media diaria del viento. | Numérica | Datos Climáticos (ERA5 vía GEE) | `.csv` | Metros por segundo (m/s) |
+| | `humidity` | Humedad relativa media diaria del aire. | Numérica | Datos Climáticos (ERA5 vía GEE) | `.csv` | Porcentaje (%) |
+| **Proximidad** | `dist_vias` | Distancia a la vía de comunicación principal más cercana. | Numérica | Shapefile de Vías | `.shp` | Metros (m) |
+| | `dist_ciudades`| Distancia al centro poblado o ciudad más cercana. | Numérica | Shapefile de Ciudades | `.shp` | Metros (m) |
+| **Objetivo** | `fire` | Variable objetivo que indica la presencia (1) o ausencia (0) de un incendio. | Binaria | Puntos de calor (FIRMS) y Muestreo | `.csv` | 0 (No Incendio), 1 (Incendio) |
 
 #### **Variables Intermedias (No usadas directamente en el modelo final, pero cruciales para la creación del dataset)**
 
-| Nombre de la Variable | Descripción | Tipo | Fuente de Datos Original | Formato/Extensión del Archivo | Observaciones |
-| :-------------------- | :---------- | :--- | :----------------------- | :---------------------------- | :-------------- |
-| `geometry` | La coordenada (Punto) de cada observación. | Geoespacial | FIRMS y Muestreo aleatorio | (`.shp`, `.csv`) | Se usa para extraer valores de los rasters. |
-| `date` | La fecha de cada observación. | Fecha/Hora | FIRMS y Muestreo aleatorio | `.csv` | Se usa para enlazar con NDVI y datos meteorológicos. |
-| `orientacion` | La orientación numérica en grados (0-360) antes de ser categorizada. | Numérica | DEM (calculado) | `.tif` | Variable intermedia para crear `orientacion_cat`. |
+| Nombre de la Variable | Descripción | Tipo | Fuente de Datos Original | Formato/Extensión | Observaciones |
+| :-------------------- | :---------- | :--- | :----------------------- | :------------------ | :-------------- |
+| `geometry` | La coordenada (Punto) de cada observación. | Geoespacial | FIRMS y Muestreo de fondo | (`.csv`, GeoDataFrame) | Se usa para extraer valores de los rasters y calcular distancias. |
+| `date` | La fecha de cada observación. | Fecha/Hora | FIRMS y Muestreo de fondo | `.csv` | Se usa para enlazar con NDVI y datos meteorológicos diarios. |
+| `orientacion` | La orientación numérica en grados (0-360) antes de ser categorizada. | Numérica | Derivado de `elevacion` | En memoria | Variable intermedia para crear `orientacion_cat`. |
 | `(Polígono de área)` | Polígono que define los límites del área de estudio (Dpto. de Cordillera). | Geoespacial | Shapefile del departamento | `.shp` | Se usa para filtrar todos los datos espaciales. |
+|`zonas_inflamables_poligono`| Polígono que define las áreas consideradas inflamables. | Geoespacial | Derivado de `cobertura` | En memoria | Se usa para generar los puntos de "No Incendio" de forma inteligente. |
 
-----
+---
 
 
 
