@@ -5,8 +5,10 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 import os
-import glob
-from datetime import datetime, timedelta
+import re
+from datetime import datetime
+from pathlib import Path
+import shap # <-- NUEVA IMPORTACIÓN
 
 # Para datos raster
 import rasterio
@@ -21,11 +23,9 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier, StackingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score, roc_curve
-# para calibración de SVM
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 
@@ -34,438 +34,382 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.interpolate import griddata
 import contextily as cx
-from matplotlib.path import Path
 from matplotlib.patches import PathPatch
-import matplotlib.path as mpath 
-from matplotlib.patches import PathPatch
-# Para manejo de archivos y rutas
-from pathlib import Path
+import matplotlib.path as mpath
 
 # Para operaciones espaciales eficientes
-from shapely.geometry import Point, box
+from shapely.geometry import Point
+
 # --- FIJAR SEMILLAS ALEATORIAS PARA LA REPRODUCIBILIDAD ---
 seed = 42
 np.random.seed(seed)
 os.environ['PYTHONHASHSEED'] = str(seed)
 print("Librerías cargadas exitosamente.")
 
-# --- Rutas a las carpetas de datos ---
-DATA_DIR = "data"
-DEM_DIR = os.path.join(DATA_DIR, "DEM")
-FIRMS_DIR = os.path.join(DATA_DIR, "FIRMS")
-GIOVANNI_DIR = os.path.join(DATA_DIR, "Giovanni NASA")
-NDVI_DIR = os.path.join(DATA_DIR, "NDVI")
-MERGED_DEM_PATH = os.path.join(DEM_DIR, "merged_dem.tif")
-HUMEDAD_DIR = os.path.join(GIOVANNI_DIR, "Humedad")
-DEPARTAMENTO_SHP_PATH = "data/COORDILLERA/Departamento_Coordillera.shp"
-VIAS_SHP_PATH = "data/COORDILLERA/Vias_principales_Coordillera.shp"
-CIUDADES_SHP_PATH = "data/COORDILLERA/Ciudades_Coordillera.shp"
-DISTRITOS_SHP_PATH = "data/COORDILLERA/Distritos_Coordillera.shp"
+# --- Rutas a las NUEVAS carpetas de datos ---
+DATA_DIR = Path("data")
+DEM_DIR = DATA_DIR / "DEM"
+FIRMS_DIR = DATA_DIR / "FIRMS" 
+COBERTURA_DIR = DATA_DIR / "Cobertura_del_Suelo"
+NDVI_DIR = DATA_DIR / "NDVI" 
 
-# --- Crear carpeta de salida para los resultados ---
+try:
+    HUMEDAD_CSV_PATH = list((DATA_DIR / "Humedad").glob("*.csv"))[0]
+    PRECIPITATION_CSV_PATH = list((DATA_DIR / "Precipitation").glob("*.csv"))[0]
+    TEMPERATURE_CSV_PATH = list((DATA_DIR / "Temperature").glob("*.csv"))[0]
+    WIND_CSV_PATH = list((DATA_DIR / "Wind").glob("*.csv"))[0]
+    print("Rutas a los archivos CSV climáticos encontradas exitosamente.")
+except IndexError:
+    print("ERROR CRÍTICO: No se encontró un archivo CSV en una de las carpetas climáticas. Revisa las carpetas.")
+    exit() 
+
+MERGED_DEM_PATH = DEM_DIR / "DEM_Cordillera.tif"
+DEPARTAMENTO_SHP_PATH = DATA_DIR / "COORDILLERA" / "Departamento_Coordillera.shp"
+VIAS_SHP_PATH = DATA_DIR / "COORDILLERA" / "Vias_principales_Coordillera.shp"
+CIUDADES_SHP_PATH = DATA_DIR / "COORDILLERA" / "Ciudades_Coordillera.shp"
+DISTRITOS_SHP_PATH = DATA_DIR / "COORDILLERA" / "Distritos_Coordillera.shp"
+
 TIMESTAMP = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 OUTPUT_DIR = Path("outputs") / TIMESTAMP
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 print(f"Los resultados se guardarán en: {OUTPUT_DIR}")
 
 # ==============================================================================
-# 1. FUNCIONES AUXILIARES PARA CARGAR Y PREPROCESAR DATOS
+# 1. FUNCIONES AUXILIARES
 # ==============================================================================
 
-def merge_dem_tiles(dem_folder, output_path):
-    """Fusiona múltiples teselas DEM en un único archivo raster."""
-    if os.path.exists(output_path):
-        print(f"El archivo DEM fusionado ya existe en: {output_path}")
-        return
-    
-    print("Fusionando teselas DEM...")
-    dem_files = glob.glob(os.path.join(dem_folder, "*.tif"))
-    if not dem_files:
-        raise FileNotFoundError("No se encontraron archivos .tif en la carpeta DEM.")
-        
-    src_files_to_mosaic = [rasterio.open(fp) for fp in dem_files]
-    mosaic, out_trans = merge(src_files_to_mosaic)
-    
-    out_meta = src_files_to_mosaic[0].meta.copy()
-    out_meta.update({
-        "driver": "GTiff",
-        "height": mosaic.shape[1],
-        "width": mosaic.shape[2],
-        "transform": out_trans,
-    })
-    
-    with rasterio.open(output_path, "w", **out_meta) as dest:
-        dest.write(mosaic)
-        
-    for src in src_files_to_mosaic:
-        src.close()
-    print(f"Teselas DEM fusionadas y guardadas en: {output_path}")
-
-
 def load_firms_data(firms_folder, study_area_geom, crs):
-    """Carga, concatena y filtra los datos de FIRMS."""
     print("Cargando datos de focos de calor (FIRMS)...")
-    firms_files = glob.glob(os.path.join(firms_folder, "**", "*.csv"), recursive=True)
-
-    if not firms_files:
-        raise FileNotFoundError("No se encontraron archivos .csv en la carpeta FIRMS.")
-        
-    df_list = [pd.read_csv(f) for f in firms_files]
-    firms_df = pd.concat(df_list, ignore_index=True)
-    
+    firms_files = list(firms_folder.glob("**/*.csv"))
+    if not firms_files: raise FileNotFoundError("No se encontraron archivos .csv en la carpeta FIRMS.")
+    firms_df = pd.concat([pd.read_csv(f) for f in firms_files if 'focos_cordillera' not in f.name], ignore_index=True)
     firms_df['date'] = pd.to_datetime(firms_df['acq_date'])
-    
-    gdf_incendios = gpd.GeoDataFrame(
-        firms_df,
-        geometry=gpd.points_from_xy(firms_df.longitude, firms_df.latitude),
-        crs="EPSG:4326"
-    ).to_crs(crs)
-    
-    # Filtrar puntos que caen dentro de la extensión del DEM
+    gdf_incendios = gpd.GeoDataFrame(firms_df, geometry=gpd.points_from_xy(firms_df.longitude, firms_df.latitude), crs="EPSG:4326").to_crs(crs)
     gdf_incendios = gdf_incendios[gdf_incendios.within(study_area_geom)]
     gdf_incendios['fire'] = 1
-    
     print(f"Se cargaron y filtraron {len(gdf_incendios)} puntos de incendios.")
     return gdf_incendios[['date', 'geometry', 'fire']]
 
+def load_climate_data(temp_path, precip_path, wind_path, humidity_path):
+    print("Cargando y combinando datos climáticos diarios...")
+    temp_df = pd.read_csv(temp_path)[['datetime', 'temp_C']].rename(columns={'temp_C': 'temperature'})
+    precip_df = pd.read_csv(precip_path)[['datetime', 'precip_mm']].rename(columns={'precip_mm': 'precipitation'})
+    wind_df = pd.read_csv(wind_path)[['datetime', 'wind_speed_10m']].rename(columns={'wind_speed_10m': 'wind_speed'})
+    hum_df = pd.read_csv(humidity_path)[['date', 'mean_RH']].rename(columns={'mean_RH': 'humidity'})
+    
+    for df in [temp_df, precip_df, wind_df, hum_df]:
+        df['datetime'] = pd.to_datetime(df.get('datetime', df.get('date')))
+    
+    climate_dfs = [temp_df, precip_df, wind_df]
+    weather_df = climate_dfs[0]
+    for df_to_merge in climate_dfs[1:]: weather_df = pd.merge(weather_df, df_to_merge, on='datetime', how='outer')
+    
+    weather_df = weather_df.set_index('datetime')
+    daily_weather = weather_df.resample('D').agg({'temperature': 'mean', 'precipitation': 'sum', 'wind_speed': 'mean'}).reset_index()
+    final_weather_df = pd.merge(daily_weather, hum_df, on='datetime', how='outer').set_index('datetime').sort_index().ffill().bfill()
+    print("Datos climáticos diarios cargados y combinados exitosamente.")
+    return final_weather_df
 
-def load_giovanni_data(giovanni_folder):
+def asignar_variables(df_puntos, dem_path, cobertura_folder, ndvi_mensual_folder, weather_df, vias_shp_path, ciudades_shp_path):
     """
-    Carga y procesa TODOS los archivos de series de tiempo de Giovanni de forma robusta.
-    Busca en las subcarpetas (Precipitation, Temperature, Wind), concatena los datos
-    de múltiples archivos si existen y los une en un único DataFrame.
-    """
-    print("Cargando datos meteorológicos de Giovanni NASA...")
-
-    def parse_giovanni_file(filepath, var_name):
-        """
-        Parsea un archivo CSV de Giovanni, detectando el encabezado buscando la línea que contiene 'time'.
-        """
-        skip = 0
-        header_found = False
-        try:
-            with open(filepath, 'r') as f:
-                for i, line in enumerate(f):
-                    if line.strip().lower().startswith('time,'):
-                        skip = i
-                        header_found = True
-                        break
-            
-            if not header_found:
-                raise ValueError(f"No se pudo encontrar la línea de encabezado (que empieza con 'time,') en {filepath}")
-
-            df = pd.read_csv(filepath, skiprows=skip)
-            
-            # Renombrar columnas de forma segura
-            df = df.rename(columns={df.columns[0]: 'datetime', df.columns[1]: var_name})
-            
-            # Asegurarse de que solo queden las columnas necesarias
-            df = df[['datetime', var_name]]
-            
-            df['datetime'] = pd.to_datetime(df['datetime'])
-            df = df.set_index('datetime')
-            return df
-
-        except Exception as e:
-            print(f"Ocurrió un error al procesar el archivo {filepath}: {e}")
-            return None
-
-    # Mapeo de subcarpetas a nombres de variables
-    subfolders_map = {
-        "Precipitation": "precipitation",
-        "Temperature": "temperature",
-        "Wind": "wind_speed"
-    }
-    
-    all_weather_dfs = []
-
-    for folder, var_name in subfolders_map.items():
-        folder_path = os.path.join(giovanni_folder, folder)
-        files = glob.glob(os.path.join(folder_path, "*"))
-
-        if not files:
-            raise FileNotFoundError(f"No se encontraron archivos en la carpeta: {folder_path}")
-        
-        print(f"Procesando {len(files)} archivo(s) para '{var_name}'...")
-        
-        # Parsear todos los archivos para la variable actual
-        df_list = [parse_giovanni_file(f, var_name) for f in files]
-        
-        # Filtrar los None si algún archivo falló y concatenar
-        valid_dfs = [df for df in df_list if df is not None]
-        if not valid_dfs:
-            raise ValueError(f"No se pudo procesar ningún archivo para la variable '{var_name}'.")
-            
-        full_var_df = pd.concat(valid_dfs)
-        all_weather_dfs.append(full_var_df)
-
-    # Comprobar que tenemos datos para todas las variables
-    if len(all_weather_dfs) != len(subfolders_map):
-        raise ValueError("No se pudieron cargar todas las variables meteorológicas. Revisa los errores anteriores.")
-    
-    # Unir los 3 dataframes por su índice de fecha
-    # El primer df es la base, y se le unen los demás
-    weather_df = all_weather_dfs[0].join(all_weather_dfs[1:], how='outer')
-    weather_df = weather_df.sort_index()
-    
-    # Rellenar posibles huecos con el método de la última observación válida
-    weather_df = weather_df.fillna(method='ffill').fillna(method='bfill')
-    
-    print("Datos meteorológicos de todos los archivos cargados y combinados exitosamente.")
-    return weather_df
-# ==============================================================================
-# 2. GENERACIÓN DE LA MUESTRA
-# ==============================================================================
-print("\n--- INICIANDO FASE DE PREPARACIÓN DE DATOS ---")
-
-# --- 2.1. Definir el área de estudio a partir del SHAPEFILE ---
-print(f"Cargando área de estudio desde: {DEPARTAMENTO_SHP_PATH}")
-try:
-    area_estudio_gdf = gpd.read_file(DEPARTAMENTO_SHP_PATH)
-except Exception as e:
-    print(f"ERROR: No se pudo leer el shapefile en la ruta: {DEPARTAMENTO_SHP_PATH}")
-    print(f"Asegúrate de que la ruta es correcta y que los archivos .shp, .shx, .dbf existen.")
-    exit() # Detener el script si no se puede cargar el área de estudio
-
-# Obtener los límites, el polígono y el CRS del shapefile
-CRS_REFERENCE = area_estudio_gdf.crs.to_string()
-study_area_bounds = area_estudio_gdf.total_bounds
-study_area_polygon = area_estudio_gdf.unary_union
-
-print(f"Área de estudio definida por el polígono del Dpto. de Cordillera. CRS: {CRS_REFERENCE}")
-
-# --- Fusionar DEM (sigue siendo necesario para los datos topográficos) ---
-merge_dem_tiles(DEM_DIR, MERGED_DEM_PATH)
-
-# --- 2.2. Cargar datos de incendios (puntos positivos) DENTRO de Cordillera ---
-puntos_positivos = load_firms_data(FIRMS_DIR, study_area_polygon, CRS_REFERENCE)
-
-# --- 2.3. Generar puntos negativos ---
-print("\nGenerando muestras negativas (no-incendios)...")
-n_negativos = len(puntos_positivos) if len(puntos_positivos) > 0 else 1000 # Evitar 0
-puntos_negativos_list = []
-minx, miny, maxx, maxy = study_area_bounds 
-
-# Rango de fechas para generar fechas aleatorias
-start_date = puntos_positivos['date'].min()
-end_date = puntos_positivos['date'].max()
-dias_rango = (end_date - start_date).days
-
-# Optimización: Pre-filtrar incendios por día para búsquedas rápidas
-incendios_por_dia = {d: g[['geometry']] for d, g in puntos_positivos.set_index('date').groupby(pd.Grouper(freq='D'))}
-
-while len(puntos_negativos_list) < n_negativos:
-    random_point = Point(np.random.uniform(minx, maxx), np.random.uniform(miny, maxy))
-    random_date = start_date + timedelta(days=np.random.randint(0, dias_rango))
-    
-    # Comprobación espacio-temporal
-    distancia_min_km = 15
-    ventana_temporal_dias = 3
-    
-    es_valido = True
-    for i in range(-ventana_temporal_dias, ventana_temporal_dias + 1):
-        check_date = (random_date + timedelta(days=i)).date()
-        if check_date in incendios_por_dia:
-            # Comprobar distancia a los incendios de ese día
-            if incendios_por_dia[check_date].distance(random_point).min() < (distancia_min_km * 1000):
-                es_valido = False
-                break
-    if es_valido:
-        puntos_negativos_list.append({'date': random_date, 'geometry': random_point, 'fire': 0})
-        if len(puntos_negativos_list) % 200 == 0:
-            print(f"  ... {len(puntos_negativos_list)}/{n_negativos} puntos negativos generados.")
-
-puntos_negativos = gpd.GeoDataFrame(puntos_negativos_list, crs=CRS_REFERENCE)
-
-# --- 2.4. Combinar y mezclar la muestra ---
-sample = pd.concat([puntos_positivos, puntos_negativos], ignore_index=True)
-sample = sample.sample(frac=1).reset_index(drop=True)
-
-print(f"\nMuestra final generada con {len(sample)} observaciones.")
-print(sample['fire'].value_counts())
-
-# ==============================================================================
-# 3. ASIGNACIÓN DE VARIABLES A LA MUESTRA
-# ==============================================================================
-
-def asignar_variables(df_puntos, dem_path, ndvi_folder, weather_df, humedad_folder, vias_shp_path, ciudades_shp_path):
-    """
-    Asigna TODAS las variables predictoras (topográficas, vegetación, clima, humedad y proximidad)
-    a un GeoDataFrame de puntos con fechas. La humedad y el NDVI se cargan por año.
+    Asigna TODAS las variables predictoras
     """
     print("\n--- INICIANDO FASE DE ASIGNACIÓN DE VARIABLES ---")
+    if df_puntos.empty: return df_puntos
     
-    if df_puntos.empty:
-        print("Advertencia: DataFrame de entrada vacío, no se asignarán variables.")
-        return df_puntos
-
     dataset = df_puntos.copy()
-    dataset['dia_del_ano'] = dataset['date'].dt.dayofyear
+    dataset['year'] = dataset['date'].dt.year
+    dataset['month'] = dataset['date'].dt.month
     
-    coords = np.array([(g.x, g.y) for g in dataset.geometry])
-    if coords.shape[0] == 0: return dataset
-
     # --- 3.1. Variables Topográficas ---
     print("Asignando variables topográficas...")
-    dem = rioxarray.open_rasterio(dem_path).squeeze()
-    dataset['elevacion'] = dem.sel(x=xr.DataArray(coords[:, 0], dims="points"), y=xr.DataArray(coords[:, 1], dims="points"), method="nearest").values
-    slope, aspect = xrs.slope(dem), xrs.aspect(dem)
-    dataset['pendiente'] = slope.sel(x=xr.DataArray(coords[:, 0], dims="points"), y=xr.DataArray(coords[:, 1], dims="points"), method="nearest").values
-    dataset['orientacion'] = aspect.sel(x=xr.DataArray(coords[:, 0], dims="points"), y=xr.DataArray(coords[:, 1], dims="points"), method="nearest").values
-    bins = [-1, 22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5, 361]; labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
-    dataset['orientacion_cat'] = pd.cut(dataset['orientacion'], bins=bins, labels=labels, right=False, ordered=False)
-    dataset['orientacion_cat'] = dataset['orientacion_cat'].cat.add_categories("Plano").fillna("Plano")
-
-    # --- 3.2. Variable de Humedad (desde TIF por año) ---
-    print("Asignando Humedad Relativa por año...")
-    dataset['humedad'] = np.nan # Inicializar columna
-    for year in dataset['date'].dt.year.unique():
-        humedad_tif_path = os.path.join(humedad_folder, f"HumedadRelativa_{year}.tif")
-        if os.path.exists(humedad_tif_path):
-            print(f"  ... cargando {humedad_tif_path}")
-            humedad_raster = rioxarray.open_rasterio(humedad_tif_path).squeeze(drop=True).rio.reproject(dataset.crs)
-            idx_year = dataset['date'].dt.year == year
-            if idx_year.any():
-                coords_year = np.array([(g.x, g.y) for g in dataset[idx_year].geometry])
-                dataset.loc[idx_year, 'humedad'] = humedad_raster.sel(x=xr.DataArray(coords_year[:, 0], dims="points"), y=xr.DataArray(coords_year[:, 1], dims="points"), method="nearest").values
-        else:
-            print(f"ADVERTENCIA: No se encontró el archivo de Humedad para el año {year} en {humedad_tif_path}.")
-
-    # --- 3.3. Variable de Vegetación (NDVI) ---
-    print("Asignando NDVI por año...")
-    dataset['ndvi'] = np.nan
-    for year in dataset['date'].dt.year.unique():
-        ndvi_path = os.path.join(ndvi_folder, f"NDVI_{year}.tif")
-        if os.path.exists(ndvi_path):
-            print(f"  ... cargando {ndvi_path}")
-            ndvi_raster = rioxarray.open_rasterio(ndvi_path).squeeze(drop=True).rio.reproject(dataset.crs)
-            idx_year = dataset['date'].dt.year == year
-            if idx_year.any():
-                coords_year = np.array([(g.x, g.y) for g in dataset[idx_year].geometry])
-                dataset.loc[idx_year, 'ndvi'] = ndvi_raster.sel(x=xr.DataArray(coords_year[:, 0], dims="points"), y=xr.DataArray(coords_year[:, 1], dims="points"), method="nearest").values
-        else:
-             print(f"ADVERTENCIA: No se encontró el archivo NDVI para el año {year} en {ndvi_path}.")
-
-
-    # --- 3.4. Variables Meteorológicas (Giovanni) ---
-    print("Asignando variables meteorológicas...")
-    dataset = pd.merge_asof(dataset.sort_values('date'), weather_df, left_on='date', right_index=True, direction='nearest').sort_index()
+    # Abrimos el DEM original en su CRS geográfico (EPSG:4674)
+    dem_geo = rioxarray.open_rasterio(dem_path).squeeze()
     
-    # --- 3.5. Características de Proximidad ---
+    # Extraemos la elevación del DEM original, ya que nuestros puntos están en ese CRS
+    x_coords = xr.DataArray(dataset.geometry.x, dims="points")
+    y_coords = xr.DataArray(dataset.geometry.y, dims="points")
+    dataset['elevacion'] = dem_geo.sel(x=x_coords, y=y_coords, method="nearest").values
+    
+    # --- CORRECCIÓN CLAVE ---
+    # Reproyectamos el DEM a un CRS en metros (UTM) SOLO para calcular pendiente y orientación
+    print("Reproyectando DEM para cálculo de pendiente/orientación...")
+    dem_utm = dem_geo.rio.reproject("EPSG:31981")
+    
+    # Calculamos pendiente y orientación sobre el DEM en metros
+    slope_utm = xrs.slope(dem_utm)
+    aspect_utm = xrs.aspect(dem_utm)
+    
+    # Para extraer los valores, necesitamos las coordenadas de nuestros puntos en el nuevo CRS (UTM)
+    dataset_utm = dataset.to_crs("EPSG:31981")
+    x_coords_utm = xr.DataArray(dataset_utm.geometry.x, dims="points")
+    y_coords_utm = xr.DataArray(dataset_utm.geometry.y, dims="points")
+    
+    # Extraemos los valores de pendiente y orientación
+    dataset['pendiente'] = slope_utm.sel(x=x_coords_utm, y=y_coords_utm, method="nearest").values
+    dataset['orientacion'] = aspect_utm.sel(x=x_coords_utm, y=y_coords_utm, method="nearest").values
+
+    # El resto del código de esta sección no cambia
+    bins = [-1, 22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5, 361]; labels = ["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"]
+    dataset['orientacion_cat'] = pd.cut(dataset['orientacion'], bins=bins, labels=labels, right=False, ordered=False).cat.add_categories("Plano").fillna("Plano")
+
+    # --- El resto de la función (Cobertura, NDVI, Clima, Proximidad) permanece idéntico ---
+    print("Asignando Cobertura del Suelo por año...")
+    dataset['cobertura'] = np.nan
+    for year in sorted(dataset['year'].unique()):
+        cobertura_path = cobertura_folder / f"Cobertura_Cordillera_{year}.tif"
+        if cobertura_path.exists():
+            cobertura_raster = rioxarray.open_rasterio(cobertura_path, masked=True).squeeze(drop=True)
+            idx_year = dataset['year'] == year
+            if idx_year.any():
+                group_year_proj = dataset.loc[idx_year].to_crs(cobertura_raster.rio.crs)
+                x_coords_year = xr.DataArray(group_year_proj.geometry.x, dims="points")
+                y_coords_year = xr.DataArray(group_year_proj.geometry.y, dims="points")
+                dataset.loc[idx_year, 'cobertura'] = cobertura_raster.sel(x=x_coords_year, y=y_coords_year, method="nearest").values
+
+    print("Asignando NDVI desde archivos mensuales...")
+    dataset['ndvi'] = np.nan
+    NDVI_SCALE_FACTOR = 0.0001
+    ndvi_files_map = { (int(f.stem.split('_')[2]), int(f.stem.split('_')[3])): f 
+                       for f in ndvi_mensual_folder.glob("NDVI_MODIS_*.tif") }
+    
+    for (year, month), group in dataset.groupby(['year', 'month']):
+        if (year, month) in ndvi_files_map:
+            raster_path = ndvi_files_map[(year, month)]
+            raster = rioxarray.open_rasterio(raster_path, masked=True).squeeze(drop=True)
+            group_proj = group.to_crs(raster.rio.crs)
+            x_coords_group = xr.DataArray(group_proj.geometry.x, dims="points")
+            y_coords_group = xr.DataArray(group_proj.geometry.y, dims="points")
+            raw_values = raster.sel(x=x_coords_group, y=y_coords_group, method="nearest").values
+            scaled_values = np.where(~np.isnan(raw_values), raw_values * NDVI_SCALE_FACTOR, np.nan)
+            dataset.loc[group.index, 'ndvi'] = scaled_values
+
+    print("Asignando variables meteorológicas...")
+    dataset = dataset.sort_values('date')
+    dataset = pd.merge_asof(dataset, weather_df, left_on='date', right_index=True, direction='nearest')
+    
     print("Añadiendo características de proximidad...")
     projected_crs = "EPSG:31981"
     dataset_proj = dataset.to_crs(projected_crs)
-
-    if os.path.exists(vias_shp_path):
-        vias_gdf = gpd.read_file(vias_shp_path).to_crs(projected_crs)
-        dataset['dist_vias'] = dataset_proj.geometry.distance(vias_gdf.union_all())
-    else:
-        dataset['dist_vias'] = -1
-
-    if os.path.exists(ciudades_shp_path):
-        ciudades_gdf = gpd.read_file(ciudades_shp_path).to_crs(projected_crs)
-        dataset['dist_ciudades'] = dataset_proj.geometry.distance(ciudades_gdf.union_all())
-    else:
-        dataset['dist_ciudades'] = -1
+    vias_gdf = gpd.read_file(VIAS_SHP_PATH).to_crs(projected_crs)
+    ciudades_gdf = gpd.read_file(CIUDADES_SHP_PATH).to_crs(projected_crs)
+    dataset['dist_vias'] = dataset_proj.geometry.distance(vias_gdf.union_all())
+    dataset['dist_ciudades'] = dataset_proj.geometry.distance(ciudades_gdf.union_all())
 
     print("Asignación de variables completada.")
     return dataset
-
-# --- Cargar datos de clima y ejecutar la asignación ---
-weather_data = load_giovanni_data(GIOVANNI_DIR)
-full_dataset = asignar_variables(sample, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_DIR, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
 # ==============================================================================
-# 4. DEPURACIÓN Y PREPARACIÓN FINAL PARA EL MODELO
+# 2. GENERACIÓN DE LA MUESTRA Y ASIGNACIÓN DE DATOS
+# ==============================================================================
+print("\n--- INICIANDO FASE DE PREPARACIÓN DE DATOS ---")
+area_estudio_gdf = gpd.read_file(DEPARTAMENTO_SHP_PATH)
+CRS_REFERENCE = area_estudio_gdf.crs.to_string()
+study_area_bounds = area_estudio_gdf.total_bounds
+study_area_polygon = area_estudio_gdf.union_all()
+print(f"Área de estudio definida. CRS: {CRS_REFERENCE}")
+
+puntos_positivos = load_firms_data(FIRMS_DIR, study_area_polygon, CRS_REFERENCE)
+
+print("\nGenerando muestras negativas (no-incendios)...")
+n_negativos = len(puntos_positivos) if len(puntos_positivos) > 0 else 1000
+puntos_negativos_list = []
+minx, miny, maxx, maxy = study_area_bounds
+start_date, end_date = puntos_positivos['date'].min(), puntos_positivos['date'].max()
+dias_rango = (end_date - start_date).days
+projected_crs = "EPSG:31981"
+puntos_positivos_proj = puntos_positivos.to_crs(projected_crs)
+incendios_por_dia_proj = {d: g[['geometry']] for d, g in puntos_positivos_proj.groupby(puntos_positivos_proj['date'].dt.date)}
+
+intentos = 0
+max_intentos = n_negativos * 200 
+
+while len(puntos_negativos_list) < n_negativos:
+    intentos += 1
+    if intentos > max_intentos:
+        print(f"\nADVERTENCIA: Se superó el número máximo de intentos ({max_intentos}).")
+        break
+    random_point_geo = Point(np.random.uniform(minx, maxx), np.random.uniform(miny, maxy))
+    if not random_point_geo.within(study_area_polygon): continue
+    random_date = start_date + pd.to_timedelta(np.random.randint(0, dias_rango + 1), unit='d')
+    es_valido = True
+    for i in range(-3, 4):
+        check_date = (random_date + pd.to_timedelta(i, unit='d')).date()
+        if check_date in incendios_por_dia_proj:
+            random_point_gds_proj = gpd.GeoSeries([random_point_geo], crs=CRS_REFERENCE).to_crs(projected_crs)
+            if incendios_por_dia_proj[check_date].distance(random_point_gds_proj.iloc[0]).min() < 15000:
+                es_valido = False; break
+    if es_valido:
+        puntos_negativos_list.append({'date': random_date, 'geometry': random_point_geo, 'fire': 0})
+        if len(puntos_negativos_list) % 200 == 0:
+            print(f"  ... {len(puntos_negativos_list)}/{n_negativos} puntos negativos generados. (Tasa de éxito: {len(puntos_negativos_list)/intentos:.2%})")
+
+if not puntos_negativos_list:
+    print("\nERROR CRÍTICO: No se pudo generar ningún punto negativo.")
+    exit()
+
+puntos_negativos = gpd.GeoDataFrame(puntos_negativos_list, crs=CRS_REFERENCE)
+sample = pd.concat([puntos_positivos, puntos_negativos], ignore_index=True).sample(frac=1, random_state=seed).reset_index(drop=True)
+print(f"\nMuestra final generada con {len(sample)} observaciones.")
+
+weather_data = load_climate_data(TEMPERATURE_CSV_PATH, PRECIPITATION_CSV_PATH, WIND_CSV_PATH, HUMEDAD_CSV_PATH)
+full_dataset = asignar_variables(sample, MERGED_DEM_PATH, COBERTURA_DIR, NDVI_DIR, weather_data, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
+
+# ==============================================================================
+# 4. DEPURACIÓN Y MODELADO
 # ==============================================================================
 print("\n--- INICIANDO FASE DE DEPURACIÓN ---")
-print(f"Registros antes de depurar: {len(full_dataset)}")
-print("Valores nulos por columna:\n", full_dataset.isnull().sum())
-
+print("Valores nulos por columna ANTES de depurar:\n", full_dataset.isnull().sum())
 datos_depurados = full_dataset.dropna()
-print(f"\nRegistros después de depurar: {len(datos_depurados)}")
+print(f"\nRegistros ANTES de depurar: {len(full_dataset)} | DESPUÉS de depurar: {len(datos_depurados)}")
 
-# Seleccionar columnas finales
-columnas_base = [
-    'elevacion', 'pendiente', 'orientacion_cat','humedad', 'ndvi', 
-    'temperature', 'precipitation', 'wind_speed'
-]
-columnas_modelo = columnas_base + ['fire']
-# Añadir las nuevas características de proximidad SOLO SI existen
-if 'dist_vias' in datos_depurados.columns and datos_depurados['dist_vias'].nunique() > 1:
-    print("-> Característica 'dist_vias' encontrada y añadida.")
-    columnas_modelo.insert(-1, 'dist_vias')
-else:
-    print("ADVERTENCIA: 'dist_vias' no se encontró o no tiene variación. No se usará.")
+if len(datos_depurados) < 100:
+    print("\nERROR CRÍTICO: No hay suficientes datos después de la depuración.")
+    exit()
 
-if 'dist_ciudades' in datos_depurados.columns and datos_depurados['dist_ciudades'].nunique() > 1:
-    print("-> Característica 'dist_ciudades' encontrada y añadida.")
-    columnas_modelo.insert(-1, 'dist_ciudades')
-else:
-    print("ADVERTENCIA: 'dist_ciudades' no se encontró o no tiene variación. No se usará.")
-
+columnas_modelo = ['elevacion', 'pendiente', 'orientacion_cat', 'cobertura', 'ndvi', 'temperature', 'precipitation', 'wind_speed', 'humidity', 'dist_vias', 'dist_ciudades', 'fire']
 datos_modelo = datos_depurados[columnas_modelo].copy()
-datos_modelo['fire'] = datos_modelo['fire'].astype(int)
-
-print("\nDataset final para modelado:\n", datos_modelo.head())
-print("\nInfo del dataset:\n")
-datos_modelo.info()
+datos_modelo['cobertura'] = datos_modelo['cobertura'].astype('category')
+print("\nInfo del dataset final:\n"); datos_modelo.info()
+print("\nVista previa del dataset final:\n", datos_modelo.head())
 
 # ==============================================================================
-# 5. MODELADO: STACKING (RF + SVM + KNN)
+# 5. MODELADO CON VALIDACIÓN ESPACIAL
 # ==============================================================================
-print("\n--- INICIANDO FASE DE MODELADO ---")
+print("\n--- INICIANDO FASE DE MODELADO CON VALIDACIÓN ESPACIAL ---")
+"""
+Separar datos con un BLOQUE ESPACIAL
+En lugar de una división aleatoria, dividiremos el departamento geográficamente.
+Usaremos la longitud como criterio: entrenaremos con los datos del 70% occidental
+del departamento y probaremos con el 30% oriental.
+"""
+# Añadimos las coordenadas 'x' al DataFrame para poder filtrar
+datos_modelo['x'] = datos_depurados.geometry.x
 
-# --- 5.1. Separar datos ---
-X = datos_modelo.drop('fire', axis=1)
-y = datos_modelo['fire']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+# Calculamos el punto de corte (el percentil 70 de las longitudes)
+split_point = datos_modelo['x'].quantile(0.7)
 
-# --- 5.2. Pipeline de preprocesamiento ---
-numeric_features = X.select_dtypes(include=np.number).columns.tolist()
-categorical_features = X.select_dtypes(include=['category', 'object']).columns.tolist()
+# Creamos los conjuntos de entrenamiento y prueba
+train_df = datos_modelo[datos_modelo['x'] <= split_point]
+test_df = datos_modelo[datos_modelo['x'] > split_point]
 
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('num', StandardScaler(), numeric_features),
-        ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)
-    ])
+# Eliminar la columna 'x' que ya no necesitamos
+train_df = train_df.drop(columns=['x'])
+test_df = test_df.drop(columns=['x'])
 
-# --- 5.3. Definir y crear el modelo de Stacking ---
-# --- NUEVA DEFINICIÓN DE ESTIMADORES (MÁS RÁPIDA) ---
-estimators = [
-    ('rf', RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1)),
-    # Usamos LinearSVC envuelto en CalibratedClassifierCV para velocidad y probabilidades
-    ('svm', CalibratedClassifierCV(LinearSVC(random_state=42, dual='auto'), cv=3)),
-    ('knn', KNeighborsClassifier(n_neighbors=10, n_jobs=-1))
-]
-meta_model = LogisticRegression(solver='liblinear')
+print(f"División espacial: {len(train_df)} muestras para entrenar, {len(test_df)} para probar.")
 
-stacking_model = StackingClassifier(
-    estimators=estimators, final_estimator=meta_model, cv=5, n_jobs=-1
-)
+# Comprobar que ambas clases están presentes en ambos conjuntos
+if train_df['fire'].nunique() < 2 or test_df['fire'].nunique() < 2:
+    print("\nADVERTENCIA: La división espacial resultó en un conjunto sin ambas clases. Prueba un punto de corte diferente (ej. 0.5) o considera una estrategia de bloques más compleja.")
+else:
+    X_train = train_df.drop('fire', axis=1)
+    y_train = train_df['fire']
+    X_test = test_df.drop('fire', axis=1)
+    y_test = test_df['fire']
 
-# --- 5.4. Pipeline completo (preprocesamiento + modelo) ---
-full_pipeline = Pipeline(steps=[
-    ('preprocessor', preprocessor),
-    ('classifier', stacking_model)
-])
+    # --- 5.2. Pipeline de preprocesamiento (sin cambios) ---
+    numeric_features = X_train.select_dtypes(include=np.number).columns.tolist()
+    categorical_features = X_train.select_dtypes(include=['category', 'object']).columns.tolist()
 
-# --- 5.5. Entrenar y Evaluar ---
-print("\nEntrenando el modelo de Stacking...")
-full_pipeline.fit(X_train, y_train)
-print("Entrenamiento completado.")
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', StandardScaler(), numeric_features),
+            ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)
+        ], remainder='passthrough')
 
-print("\nEvaluando el modelo en el conjunto de prueba...")
-y_pred = full_pipeline.predict(X_test)
-y_pred_proba = full_pipeline.predict_proba(X_test)[:, 1]
+    # --- 5.3. Definir y crear el modelo de Stacking (sin cambios) ---
+    estimators = [
+        ('rf', RandomForestClassifier(n_estimators=100, random_state=seed, n_jobs=-1)),
+        ('svm', CalibratedClassifierCV(LinearSVC(random_state=seed, dual='auto', max_iter=2000), cv=3)),
+        ('knn', KNeighborsClassifier(n_neighbors=10, n_jobs=-1))
+    ]
+    meta_model = LogisticRegression(solver='liblinear')
+    stacking_model = StackingClassifier(estimators=estimators, final_estimator=meta_model, cv=5, n_jobs=-1)
 
-print("\n--- Métricas de Rendimiento ---")
-print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}")
-print(f"ROC AUC Score: {roc_auc_score(y_test, y_pred_proba):.4f}")
-print("\nReporte de Clasificación:")
-print(classification_report(y_test, y_pred, target_names=['No Incendio', 'Incendio']))
+    full_pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', stacking_model)])
 
-# --- 5.6. Visualizaciones de resultados y guardado ---
+    # --- 5.4. Entrenar y Evaluar ---
+    print("\nEntrenando el modelo de Stacking...")
+    full_pipeline.fit(X_train, y_train)
+    print("Entrenamiento completado.")
+
+    print("\nEvaluando el modelo en el conjunto de prueba ESPACIAL...")
+    y_pred = full_pipeline.predict(X_test)
+    y_pred_proba = full_pipeline.predict_proba(X_test)[:, 1]
+
+    print("\n--- Métricas de Rendimiento (VALIDACIÓN ESPACIAL) ---")
+    print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}")
+    print(f"ROC AUC Score: {roc_auc_score(y_test, y_pred_proba):.4f}")
+    print("\nReporte de Clasificación:\n"); print(classification_report(y_test, y_pred, target_names=['No Incendio', 'Incendio']))
+
+
+# ==============================================================================
+# 4.5 ANÁLISIS DE SANIDAD DE LA MUESTRA Y LA PARTICIÓN ESPACIAL
+# ==============================================================================
+print("\n--- INICIANDO ANÁLISIS DE SANIDAD DE LA MUESTRA ---")
+
+# --- Hipótesis 1: ¿Son las muestras negativas "demasiado fáciles"? ---
+print("\nGenerando gráficos para analizar la distribución de las muestras...")
+
+# Gráfico 1: Distribución Espacial de la Muestra Completa
+# Esto nos permite ver si los puntos negativos (azules) están distribuidos de forma similar a los positivos (rojos).
+fig, ax = plt.subplots(1, 1, figsize=(15, 12))
+area_estudio_gdf.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=2, zorder=3)
+datos_depurados[datos_depurados['fire'] == 0].plot(ax=ax, marker='o', color='blue', markersize=5, label='No Incendio', alpha=0.5)
+datos_depurados[datos_depurados['fire'] == 1].plot(ax=ax, marker='x', color='red', markersize=8, label='Incendio', alpha=0.7)
+ax.set_title('Distribución Espacial de la Muestra de Entrenamiento', fontsize=18)
+ax.legend()
+cx.add_basemap(ax, crs=area_estudio_gdf.crs.to_string(), source=cx.providers.CartoDB.Positron)
+plt.savefig(OUTPUT_DIR / "mapa_distribucion_muestra.png", dpi=300)
+plt.show()
+
+# Gráfico 2: Comparación de la Distribución de Variables Clave
+# Comparamos las distribuciones para "Incendio" vs "No Incendio".
+# Si las cajas son muy diferentes, los puntos negativos son "fáciles".
+variables_a_comparar = ['elevacion', 'pendiente', 'ndvi', 'dist_vias', 'dist_ciudades']
+for var in variables_a_comparar:
+    plt.figure(figsize=(8, 6))
+    sns.boxplot(x='fire', y=var, data=datos_modelo)
+    plt.title(f'Comparación de "{var}" entre Clases', fontsize=16)
+    plt.xticks([0, 1], ['No Incendio', 'Incendio'])
+    plt.grid(True)
+    plt.savefig(OUTPUT_DIR / f'boxplot_{var}_vs_fire.png', dpi=300)
+    plt.show()
+
+
+# --- Hipótesis 2: ¿Es la partición espacial representativa? ---
+print("\nGenerando mapa de la partición Train/Test espacial...")
+
+# Recreamos la división para obtener los índices y geometrías
+temp_df_vis = datos_depurados.copy()
+temp_df_vis['x'] = temp_df_vis.geometry.x
+split_point_vis = temp_df_vis['x'].quantile(0.7)
+train_indices = temp_df_vis[temp_df_vis['x'] <= split_point_vis].index
+test_indices = temp_df_vis[temp_df_vis['x'] > split_point_vis].index
+
+train_gdf_vis = datos_depurados.loc[train_indices]
+test_gdf_vis = datos_depurados.loc[test_indices]
+
+# Gráfico 3: Mapa de la Partición Espacial
+fig, ax = plt.subplots(1, 1, figsize=(15, 12))
+area_estudio_gdf.plot(ax=ax, facecolor='whitesmoke', edgecolor='black', linewidth=1)
+train_gdf_vis.plot(ax=ax, marker='o', color='dodgerblue', markersize=5, label=f'Train ({len(train_gdf_vis)} puntos)')
+test_gdf_vis.plot(ax=ax, marker='o', color='orangered', markersize=5, label=f'Test ({len(test_gdf_vis)} puntos)')
+
+# Dibujar la línea de división
+ax.axvline(x=split_point_vis, color='black', linestyle='--', linewidth=2, label=f'Línea de Corte (Longitud={split_point_vis:.2f})')
+
+ax.set_title('Visualización de la Partición Espacial Train/Test', fontsize=18)
+ax.legend()
+cx.add_basemap(ax, crs=area_estudio_gdf.crs.to_string(), source=cx.providers.CartoDB.Positron)
+plt.savefig(OUTPUT_DIR / "mapa_particion_espacial.png", dpi=300)
+plt.show()
+
+print("--- ANÁLISIS DE SANIDAD COMPLETADO ---")
+
+# ==========================================c====================================
+# 5.6. GUARDADO DE RESULTADOS Y VISUALIZACIÓN
+# ==============================================================================
 print("\n--- Guardando resultados del modelo ---")
 
 # --- Guardar el reporte de clasificación en un archivo de texto ---
@@ -516,38 +460,29 @@ print(f"Gráfico de rendimiento guardado en: {plot_path}")
 # Mostrar el gráfico en pantalla
 plt.show()
 
+
 # ==============================================================================
 # 6. APLICACIÓN: MAPA DE RIESGO
 # ==============================================================================
+# ... [El resto de tu script para el mapa de riesgo permanece idéntico] ...
 print("\n--- INICIANDO FASE DE APLICACIÓN: MAPA DE RIESGO ---")
-
-# --- 6.1. Crear rejilla de puntos dentro del polígono del departamento ---
 cell_size = 0.005 
 minx, miny, maxx, maxy = study_area_bounds
-x_coords = np.arange(minx, maxx, cell_size)
-y_coords = np.arange(miny, maxy, cell_size)
-xv, yv = np.meshgrid(x_coords, y_coords)
-grid_gdf = gpd.GeoDataFrame(geometry=[Point(x, y) for x, y in zip(xv.ravel(), yv.ravel())], crs=CRS_REFERENCE)
-
-# Filtrar los puntos para que estén estrictamente dentro del polígono del departamento
-grid_en_area = grid_gdf[grid_gdf.within(study_area_polygon)]
+xv, yv = np.meshgrid(np.arange(minx, maxx, cell_size), np.arange(miny, maxy, cell_size))
+grid_gdf = gpd.GeoDataFrame(geometry=gpd.points_from_xy(xv.ravel(), yv.ravel()), crs=CRS_REFERENCE)
+grid_en_area = grid_gdf[grid_gdf.within(study_area_polygon)].copy()
 
 if grid_en_area.empty:
-    print("\nADVERTENCIA: No se generaron puntos en la rejilla que caigan dentro del polígono del departamento.")
-    print("Prueba un 'cell_size' aún más pequeño si el departamento es muy irregular.")
+    print("\nADVERTENCIA: No se generaron puntos en la rejilla.")
 else:
     print(f"Se generaron {len(grid_en_area)} puntos en la rejilla para la predicción.")
+    fecha_prediccion = pd.to_datetime("2023-08-15")
+    grid_en_area.loc[:, 'date'] = fecha_prediccion
+    weather_pred = weather_data
     
-    # --- 6.2. Asignar fecha y variables a la rejilla ---
-    fecha_prediccion = pd.to_datetime("2025-08-14")
-    grid_en_area['date'] = fecha_prediccion
-
-    grid_con_variables_raw = asignar_variables(grid_en_area, MERGED_DEM_PATH, NDVI_DIR, weather_data, HUMEDAD_DIR, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
-    
-    # Eliminar filas que tengan algún valor nulo después de la asignación
+    grid_con_variables_raw = asignar_variables(grid_en_area, MERGED_DEM_PATH, COBERTURA_DIR, NDVI_DIR, weather_pred, VIAS_SHP_PATH, CIUDADES_SHP_PATH)
     grid_con_variables = grid_con_variables_raw.dropna()
     
-    # --- 6.3. Predecir y visualizar ---
     if not grid_con_variables.empty:
         print(f"Prediciendo el riesgo para {len(grid_con_variables)} puntos válidos.")
         X_grid = grid_con_variables[X_train.columns]
@@ -580,7 +515,6 @@ else:
             vmin=vmin,      
             vmax=vmax       
         )
-        
         # --- 3. Enmascarar el mapa de calor ---
         
         union_poly = area_estudio_gdf.union_all()
@@ -600,38 +534,8 @@ else:
         patch = PathPatch(clip_path, transform=ax.transData, facecolor='none')
         im.set_clip_path(patch)
 
-        # --- 4. Dibujar contornos ---
-        area_estudio_gdf.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=1) 
-        if os.path.exists(DISTRITOS_SHP_PATH):
-            distritos_gdf = gpd.read_file(DISTRITOS_SHP_PATH).to_crs(area_estudio_gdf.crs)
-            distritos_gdf.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=0.5, alpha=0.6)
-        # --- AÑADIR CIUDADES Y SUS NOMBRES SE VE FEO POR ESO COMENTÉ---
-        # if os.path.exists(CIUDADES_SHP_PATH):
-        #     ciudades_gdf = gpd.read_file(CIUDADES_SHP_PATH).to_crs(area_estudio_gdf.crs)
-            
-        #     # 1. Dibujar un punto para cada ciudad
-        #     ciudades_gdf.plot(
-        #         ax=ax, 
-        #         marker='o',
-        #         color="white",
-        #         edgecolor="black",
-        #         markersize=30
-        #     )
-
-        #     # 2. Escribir el nombre al lado de cada punto
-        #     if "DIST_DESC_" in ciudades_gdf.columns:
-        #         for x, y, label in zip(ciudades_gdf.geometry.x, ciudades_gdf.geometry.y, ciudades_gdf["DIST_DESC_"]):
-        #             ax.text(
-        #                 x + 0.005,  # Desplazamiento a la derecha
-        #                 y,
-        #                 label.title(), # Pone el texto en formato de título
-        #                 fontsize=9,
-        #                 ha='left',
-        #                 va='center',
-        #                 bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', pad=0.2) # Fondo para legibilidad
-        #             )
-        #     else:
-        #         print("ADVERTENCIA: No se encontró la columna 'DIST_DESC_' para las etiquetas de ciudades.")
+        area_estudio_gdf.plot(ax=ax, facecolor='none', edgecolor='black', linewidth=1)
+        gpd.read_file(DISTRITOS_SHP_PATH).to_crs(area_estudio_gdf.crs).plot(ax=ax, facecolor='none', edgecolor='black', linewidth=0.5, alpha=0.6)
         
         # --- 5. Configuración final ---
         ax.set_title(f"Mapa de Riesgo de Incendio para Cordillera\nFecha: {fecha_prediccion.date()}", fontsize=18)
@@ -651,8 +555,5 @@ else:
         
         plt.show()
     else:
-        print("\nERROR FINAL: No se pudo generar el mapa de riesgo.")
-        print("Causa: Después de eliminar filas con valores nulos, no quedó ningún punto en la rejilla.")
-        print("Esto suele ocurrir si los puntos caen fuera de la cobertura de algún raster (ej. NDVI).")
-        print("Valores nulos encontrados en la rejilla antes de eliminar:")
-        print(grid_con_variables_raw.isnull().sum())
+        print("\nERROR FINAL: No se pudo generar el mapa de riesgo. La rejilla quedó vacía después de la depuración.")
+        print("Valores nulos encontrados en la rejilla antes de eliminar:\n", grid_con_variables_raw.isnull().sum())
