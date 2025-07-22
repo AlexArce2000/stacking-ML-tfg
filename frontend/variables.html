@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variables del Modelo - Tesis</title>
+    <link rel="stylesheet" href="style/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <h1>Dashboard de Resultados: Modelo Predictivo de Riesgo de Incendio</h1>
+        <!-- MENÚ DE NAVEGACIÓN -->
+        <nav>
+            <ul>
+                <li><a href="../index.html">Dashboard</a></li>
+                <li><a href="variables.html">Variables</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <div class="card text-card full-width-card">
+            <h3>Descripción de Variables del Modelo</h3>
+            <p>Esta sección detalla todas las variables utilizadas para construir y entrenar el modelo predictivo de riesgo de incendios. Se dividen en la variable objetivo que se busca predecir, las variables predictoras que alimentan al modelo, y las variables intermedias utilizadas durante el preprocesamiento de datos.</p>
+            
+            <div class="table-wrapper">
+                <table class="report-table">
+                    <caption>Variable Objetivo (Target)</caption>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Tipo</th>
+                            <th>Fuente de Datos</th>
+                            <th>Valores Posibles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>`fire`</strong></td>
+                            <td>Indica si en un punto y fecha determinados ocurrió un incendio.</td>
+                            <td>Binaria</td>
+                            <td><strong>Positivos:</strong> FIRMS<br><strong>Negativos:</strong> Muestreo aleatorio</td>
+                            <td><code>1</code> (Incendio)<br><code>0</code> (No Incendio)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="report-table">
+                    <caption>Variables Predictoras (Features)</caption>
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Tipo</th>
+                            <th>Fuente</th>
+                            <th>Unidad / Ejemplo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td rowspan="3">Topográficas</td>
+                            <td><code>elevacion</code></td>
+                            <td>Altura sobre el nivel del mar.</td>
+                            <td>Numérica</td>
+                            <td>DEM</td>
+                            <td>Metros (m)</td>
+                        </tr>
+                        <tr>
+                            <td><code>pendiente</code></td>
+                            <td>Inclinación del terreno; influye en la velocidad de propagación.</td>
+                            <td>Numérica</td>
+                            <td>Derivado de DEM</td>
+                            <td>Grados (°)</td>
+                        </tr>
+                        <tr>
+                            <td><code>orientacion_cat</code></td>
+                            <td>Dirección cardinal de la ladera (aspecto).</td>
+                            <td>Categórica</td>
+                            <td>Derivado de DEM</td>
+                            <td>N, NE, E, SE, etc.</td>
+                        </tr>
+                        <tr>
+                            <td>Uso del Suelo</td>
+                            <td><code>cobertura</code></td>
+                            <td>Tipo de cobertura del suelo (bosque, pastizal, etc.).</td>
+                            <td>Categórica</td>
+                            <td>Clasificación Cobertura</td>
+                            <td>Códigos (3.0, 11.0)</td>
+                        </tr>
+                        <tr>
+                            <td>Vegetación</td>
+                            <td><code>ndvi</code></td>
+                            <td>Índice de Vegetación de Diferencia Normalizada.</td>
+                            <td>Numérica</td>
+                            <td>MODIS (vía GEE)</td>
+                            <td>Rango: -1 a +1</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="4">Meteorológicas</td>
+                            <td><code>temperature</code></td>
+                            <td>Temperatura media diaria del aire.</td>
+                            <td>Numérica</td>
+                            <td>ERA5 (vía GEE)</td>
+                            <td>Grados Celsius (°C)</td>
+                        </tr>
+                        <tr>
+                            <td><code>precipitation</code></td>
+                            <td>Precipitación total diaria.</td>
+                            <td>Numérica</td>
+                            <td>ERA5 (vía GEE)</td>
+                            <td>mm/día</td>
+                        </tr>
+                        <tr>
+                            <td><code>wind_speed</code></td>
+                            <td>Velocidad media diaria del viento.</td>
+                            <td>Numérica</td>
+                            <td>ERA5 (vía GEE)</td>
+                            <td>m/s</td>
+                        </tr>
+                        <tr>
+                            <td><code>humidity</code></td>
+                            <td>Humedad relativa media diaria del aire.</td>
+                            <td>Numérica</td>
+                            <td>ERA5 (vía GEE)</td>
+                            <td>Porcentaje (%)</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2">Proximidad</td>
+                            <td><code>dist_vias</code></td>
+                            <td>Distancia a la vía principal más cercana.</td>
+                            <td>Numérica</td>
+                            <td>Shapefile de Vías</td>
+                            <td>Metros (m)</td>
+                        </tr>
+                         <tr>
+                            <td><code>dist_ciudades</code></td>
+                            <td>Distancia al centro poblado más cercano.</td>
+                            <td>Numérica</td>
+                            <td>Shapefile de Ciudades</td>
+                            <td>Metros (m)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-wrapper">
+                <table class="report-table">
+                    <caption>Variables Intermedias</caption>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Tipo</th>
+                            <th>Fuente</th>
+                            <th>Observaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>geometry</code></td>
+                            <td>Coordenada (Punto) de cada observación.</td>
+                            <td>Geoespacial</td>
+                            <td>FIRMS / Muestreo</td>
+                            <td>Usada para extraer valores de los rasters.</td>
+                        </tr>
+                        <tr>
+                            <td><code>date</code></td>
+                            <td>Fecha de cada observación.</td>
+                            <td>Fecha/Hora</td>
+                            <td>FIRMS / Muestreo</td>
+                            <td>Usada para enlazar con datos meteorológicos.</td>
+                        </tr>
+                        <tr>
+                            <td><code>orientacion</code></td>
+                            <td>Orientación numérica en grados (0-360).</td>
+                            <td>Numérica</td>
+                            <td>DEM (calculado)</td>
+                            <td>Variable intermedia para crear `orientacion_cat`.</td>
+                        </tr>
+                        <tr>
+                            <td><code>zonas_inflamables_poligono</code></td>
+                            <td>Polígono que define las áreas consideradas inflamables.</td>
+                            <td>Geoespacial</td>
+                            <td>Derivado de `cobertura`</td>
+                            <td>Usado para generar puntos de "No Incendio".</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </main>
+    
+    <footer>
+        <p>Dashboard generado para proyecto de tesis.</p>
+    </footer>
+    <script src="js/script.js"></script>
+</body>
+</html>

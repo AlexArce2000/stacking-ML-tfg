@@ -1,0 +1,33 @@
+=========================================
+ RESUMEN DEL DATASET FINAL (datos_modelo)
+=========================================
+
+--- DataFrame .info() ---
+<class 'pandas.core.frame.DataFrame'>
+Index: 28156 entries, 20966 to 22829
+Data columns (total 12 columns):
+ #   Column           Non-Null Count  Dtype   
+---  ------           --------------  -----   
+ 0   elevacion        28156 non-null  int16   
+ 1   pendiente        28156 non-null  float32 
+ 2   orientacion_cat  28156 non-null  category
+ 3   cobertura        28156 non-null  category
+ 4   ndvi             28156 non-null  float64 
+ 5   temperature      28156 non-null  float64 
+ 6   precipitation    28156 non-null  float64 
+ 7   wind_speed       28156 non-null  float64 
+ 8   humidity         28156 non-null  float64 
+ 9   dist_vias        28156 non-null  float64 
+ 10  dist_ciudades    28156 non-null  float64 
+ 11  fire             28156 non-null  int64   
+dtypes: category(2), float32(1), float64(7), int16(1), int64(1)
+memory usage: 2.1 MB
+
+
+--- DataFrame .head() ---
+       elevacion  pendiente orientacion_cat cobertura    ndvi  temperature  precipitation  wind_speed   humidity    dist_vias  dist_ciudades  fire
+20966        212   9.774991              SE       3.0  0.7976    22.977368        1.24333    1.822649  77.983546  4870.936831    5749.752569     1
+1605          69   4.333410              NE      12.0  0.7136    22.977368        1.24333    1.822649  77.983546    24.500663    7788.816211     0
+2724          80   0.713733              NW      12.0  0.7352    22.977368        1.24333    1.822649  77.983546  4994.818827    7024.138080     0
+11645        241   8.766986               N      12.0  0.7146    22.977368        1.24333    1.822649  77.983546  1547.036569    2322.776916     0
+9631          65   1.070530              SE      11.0  0.6762    22.977368        1.24333    1.822649  77.983546  5691.077368   17011.378893     0

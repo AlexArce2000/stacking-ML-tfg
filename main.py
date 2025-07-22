@@ -733,3 +733,49 @@ else:
     else:
         print("\nERROR FINAL: No se pudo generar el mapa de riesgo. La rejilla quedó vacía después de la depuración.")
         print("Valores nulos encontrados en la rejilla antes de eliminar:\n", grid_con_variables_raw.isnull().sum())
+
+
+# ==============================================================================
+# 7. EXPORTAR RESULTADOS PARA EL FRONTEND
+# ==============================================================================
+import shutil
+
+print("\n--- COPIANDO ARTEFACTOS PARA EL FRONTEND ---")
+
+# Ruta a la carpeta fija que leerá el frontend
+frontend_data_dir = Path("frontend") / "data"
+frontend_data_dir.mkdir(parents=True, exist_ok=True)
+
+# Lista de los archivos que queremos mostrar en el frontend
+# La clave es el nombre del archivo original, el valor es el nuevo nombre (más simple)
+files_to_copy = {
+    "boxplot_dist_ciudades_vs_fire.png":"boxplot_dist_ciudades_vs_fire.png",
+    "boxplot_dist_vias_vs_fire.png":"boxplot_dist_vias_vs_fire.png",
+    "boxplot_elevacion_vs_fire.png":"boxplot_elevacion_vs_fire.png",
+    "boxplot_ndvi_vs_fire.png":"boxplot_ndvi_vs_fire.png",
+    "boxplot_pendiente_vs_fire.png":"boxplot_pendiente_vs_fire.png",
+    "predicciones_riesgo.csv": "predicciones_riesgo.csv",
+    "classification_report.txt": "classification_report.txt",
+    "dataset_summary.txt": "dataset_summary.txt",
+    "performance_plot.png": "performance_plot.png",
+    "risk_map_heatmap_final.png": "mapa_riesgo.png",
+    "shap_summary_plot_rf.png": "shap_summary_plot.png",
+    "shap_bar_plot_rf.png": "shap_bar_plot.png",
+    "mapa_distribucion_muestra.png": "mapa_distribucion_muestra.png",
+    "mapa_particion_espacial.png": "mapa_particion_espacial.png"
+}
+
+# Bucle para copiar y renombrar cada archivo
+copied_files = []
+for original_name, new_name in files_to_copy.items():
+    source_path = OUTPUT_DIR / original_name
+    destination_path = frontend_data_dir / new_name
+    
+    if source_path.exists():
+        shutil.copy(source_path, destination_path)
+        copied_files.append(new_name)
+    else:
+        print(f"ADVERTENCIA: El archivo '{original_name}' no se encontró en los outputs y no se copió.")
+
+print(f"\nSe copiaron {len(copied_files)} archivos a la carpeta '{frontend_data_dir}'.")
+print("El frontend está listo para ser visualizado.")

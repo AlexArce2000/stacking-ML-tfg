@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Riesgo de Incendio - Tesis</title>
+    <link rel="stylesheet" href="frontend/style/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Capa de Error -->
+    <div id="error-overlay">
+        <div class="error-message-box">
+            <h2>¡Atención! Faltan los Datos</h2>
+            <p>No se han encontrado los archivos de resultados.<br>Por favor, <strong>ejecute el pipeline de Python (`main.py`)</strong> y luego actualice esta página.</p>
+        </div>
+    </div>
+
+    <!-- Lightbox para el zoom de imágenes -->
+    <div id="lightbox-overlay">
+        <div id="zoom-controls">
+        <button id="zoom-in">+</button>
+        <button id="zoom-out">−</button>
+        <button id="zoom-reset">⟳</button>
+        </div>
+
+        <span class="lightbox-close">×</span>
+        <img id="lightbox-image" src="" alt="Imagen Ampliada">
+    </div>
+
+    <header>
+        <h1>Dashboard de Resultados: Modelo Predictivo de Riesgo de Incendio</h1>
+        <!-- MENÚ DE NAVEGACIÓN -->
+        <nav>
+            <ul>
+                <li><a href="/index.html">Dashboard</a></li>
+                <li><a href="frontend/variables.html">Variables</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="dashboard">
+        <!-- ... (el resto del contenido de las tarjetas no cambia) ... -->
+        <div class="card">
+            <h3>Mapa de Riesgo de Incendio</h3>
+            <div class="image-container">
+                <img id="riskMapImage" class="zoomable" src="" alt="Mapa de Riesgo de Incendio">
+            </div>
+        </div>
+        <div class="card">
+            <h3>Métricas de Rendimiento del Modelo</h3>
+            <div class="image-container">
+                <img id="performancePlot" class="zoomable" src="" alt="Gráfico de Rendimiento del Modelo">
+            </div>
+        </div>
+        <div class="card">
+            <h3>Importancia de Características (SHAP Summary)</h3>
+            <div class="image-container">
+                <img id="shapSummaryPlot" class="zoomable" src="" alt="Gráfico de Importancia SHAP">
+            </div>
+        </div>
+        <div class="card">
+            <h3>Importancia Media (SHAP Bar Plot)</h3>
+            <div class="image-container">
+                <img id="shapBarPlot" class="zoomable" src="" alt="Gráfico de Barras de Importancia SHAP">
+            </div>
+        </div>
+        <div class="card">
+            <h3>Distribución Espacial de la Muestra</h3>
+            <div class="image-container">
+                <img id="distribucionMuestra" class="zoomable" src="" alt="Mapa de Distribución de la Muestra">
+            </div>
+        </div>
+        <div class="card">
+            <h3>Partición Espacial Train/Test</h3>
+            <div class="image-container">
+                <img id="particionEspacial" class="zoomable" src="" alt="Mapa de Partición Espacial Train/Test">
+            </div>
+        </div>
+        <div class="card full-width-card">
+            <h3>Análisis Exploratorio de Variables (Boxplots)</h3>
+            <p>Compara la distribución de cada variable entre los casos de "Incendio" y "No Incendio".</p>
+            <div class="gallery-viewer">
+                <img id="boxplotDisplay" class="zoomable" src="" alt="Visualización de Boxplot">
+            </div>
+            <div class="gallery-controls">
+                <button class="boxplot-btn active" data-src="boxplot_dist_ciudades_vs_fire.png">Dist. Ciudades</button>
+                <button class="boxplot-btn" data-src="boxplot_dist_vias_vs_fire.png">Dist. Vías</button>
+                <button class="boxplot-btn" data-src="boxplot_elevacion_vs_fire.png">Elevación</button>
+                <button class="boxplot-btn" data-src="boxplot_ndvi_vs_fire.png">NDVI</button>
+                <button class="boxplot-btn" data-src="boxplot_pendiente_vs_fire.png">Pendiente</button>
+            </div>
+        </div>
+        <div class="card text-card">
+            <h3>Reporte de Clasificación</h3>
+            <div id="classificationReportContainer" class="table-wrapper"></div>
+        </div>
+        <div class="card text-card">
+            <h3>Resumen del Dataset Utilizado</h3>
+            <div id="datasetSummaryContainer" class="table-wrapper"></div>
+        </div>
+    </main>
+    
+    <footer>
+        <p>Dashboard generado para proyecto de tesis.</p>
+    </footer>
+
+    <script src="frontend/js/script.js"></script>
+</body>
+</html>
