@@ -19,21 +19,27 @@ LogisticRegression.
 
 ```
 ├── data/                # Carpeta ignorada por Git. Contiene los datos de entrada.
+│   ├── Cobertura_del_Suelo/     # Datos geoespaciales relacionados con bosque, pastizal, etc.
 │   ├── COORDILLERA/     # Datos geoespaciales relacionados con la cordillera.
 │   ├── DEM/             # Datos del modelo digital de elevación (DEM).
 │   ├── FIRMS/           # Datos de incendios (FIRMS).
-|   ├── FOCOS/           # Datos de incendios reales
-│   ├── Giovanni NASA/   # Datos obtenidos de la NASA (Giovanni).
-│   │   ├── Humedad/       # Datos de humedad relativa.
-│   │   ├── Precipitation/ # Datos de precipitación.
-│   │   ├── Temperature/   # Datos de temperatura del aire.
-│   │   └── Wind/          # Datos de velocidad del viento.
+│   ├── Humedad/       # Datos de humedad relativa.
+│   ├── Precipitation/ # Datos de precipitación.
+│   ├── Temperature/   # Datos de temperatura del aire.
+│   └── Wind/          # Datos de velocidad del viento.
 │   └── NDVI/            # Índice de vegetación de diferencia normalizada.
+├── frontend/          # Frontend básico para el dashboard de resultados  
+│   │   ├── output/       # Últimos datos copiados desde el ouputs del pipeline.
+│   │   ├── js/        # carpeta con los js       
+│   │   ├── style/     # carpeta con los css
+│   │   ├── variables.html/ 
 ├── outputs/             
+├── outputs_focos_reales/              
 ├── .gitignore           
 ├── clear_outputs.py     # Script de utilidad para limpiar la carpeta de resultados.
 ├── focos_cordillera.py  # Script de utilidad para reporta lo que realmente sucedió.
 ├── focos_cordillera_historico_completo.py  # Script de utilidad para reporta el total de incendios 2018-2023.
+├── index.html              # Index para el dashboard
 ├── main.py              # Script principal que ejecuta todo el flujo: carga, preprocesa, entrena y predice.
 ├── requirements.txt     # Lista de librerías de Python necesarias.
 └── README.md            # Este archivo.
@@ -100,7 +106,7 @@ LogisticRegression.
     Los resultados, incluyendo el reporte de clasificación y el mapa de riesgo, se guardarán en una nueva carpeta con fecha y hora dentro de `outputs/`.
 
 
-Nota: Agregado el algoritmo verficador de la realidad `focos_cordillera.py`, que reporta lo que realmente sucedió. 
+Nota: Agregado el algoritmo verficador de la realidad `focos_cordillera.py`, que reporta lo que realmente sucedió en fechas especificas. 
 
 ### TFG (posible título): 
 Predicción de riesgo de incendios forestales en el
