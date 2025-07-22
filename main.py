@@ -743,7 +743,7 @@ import shutil
 print("\n--- COPIANDO ARTEFACTOS PARA EL FRONTEND ---")
 
 # Ruta a la carpeta fija que leerá el frontend
-frontend_data_dir = Path("frontend") / "data"
+frontend_data_dir = Path("frontend") / "ouput"
 frontend_data_dir.mkdir(parents=True, exist_ok=True)
 
 # Lista de los archivos que queremos mostrar en el frontend
