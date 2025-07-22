@@ -3,9 +3,11 @@
 **Datos:** 01-01-2018 a 31-12-2023
 
 **Descarga de datos:** 
-https://anonfile.link/s/G6Bh7gcdmiL
+* https://anonfile.link/s/G6Bh7gcdmiL
 
-https://drive.google.com/drive/folders/1E2Wbdy16W65BfXifNLOEWrCAh_Y_lrQQ?usp=drive_link
+* https://drive.google.com/drive/folders/1E2Wbdy16W65BfXifNLOEWrCAh_Y_lrQQ?usp=drive_link
+
+**Dashboard básico**: https://alexarce2000.github.io/stacking-ML-tfg/
 
 *Modelado:* 
 Stacking (RF + SVM + KNN) 
