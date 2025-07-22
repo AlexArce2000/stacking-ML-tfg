@@ -1,226 +1,500 @@
 :root {
-    --bg-color: #0f0f1b; /* Fondo más oscuro y azulado */
-    --card-bg-color: #1c1c2e; /* Tarjetas con tinte púrpura */
-    --text-color: #a9a9d2; /* Texto más suave */
-    --header-color: #ffffff;
-    --accent-color: #8a3ffc; /* Acento púrpura vibrante */
-    --border-color: #2e2e4b;
-    --table-header-bg: #2e2e4b;
-    --table-row-even-bg: #22223a;
-    --green-accent: #42be65;
-    --red-accent: #fa4d56;
+   --bg-color: #0f0f1b;
+   --card-bg-color: rgba(28, 28, 46, 0.7);
+   --text-color: #a9a9d2;
+   --header-color: #ffffff;
+   --accent-color: #8a3ffc;
+   --border-color: rgba(255, 255, 255, 0.1);
+   --table-header-bg: #2e2e4b;
+   --table-row-even-bg: #22223a;
+   --green-accent: #42be65;
+   --red-accent: #fa4d56;
+   --blue-accent: #4589ff;
+}
+
+/* Estilos base */
+* {
+   box-sizing: border-box;
+   margin: 0;
+   padding: 0;
 }
 
 body {
-    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    margin: 0;
-    padding: 20px;
-    font-weight: 300;
+   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+   background-color: var(--bg-color);
+   color: var(--text-color);
+   padding: 20px;
+   font-weight: 300;
+   line-height: 1.6;
 }
 
+/* Encabezado */
 header {
-    text-align: center;
-    margin-bottom: 40px;
-    padding-bottom: 20px;
+   text-align: center;
+   margin-bottom: 40px;
+   padding: 2rem;
+   border-radius: 25px;
+   background: linear-gradient(135deg, var(--accent-color) 0%, #5e3cbe 100%);
+   box-shadow: 0 10px 30px rgba(138, 63, 252, 0.3);
 }
-header h1 { color: var(--header-color); margin: 0 0 10px 0; font-size: 2.5em; font-weight: 700; }
-header h2 { font-weight: 300; margin: 0; font-size: 1.2em; }
 
+header h1 {
+   color: var(--header-color);
+   margin: 0 0 10px 0;
+   font-size: 2.5em;
+   font-weight: 700;
+}
+
+header p {
+   font-size: 1.1em;
+   opacity: 0.9;
+   max-width: 800px;
+   margin: 0 auto 20px auto;
+}
+
+/* Navegación */
+header nav {
+   margin-top: 25px;
+   border-top: 1px solid rgba(255, 255, 255, 0.2);
+   padding-top: 15px;
+}
+
+header nav ul {
+   list-style: none;
+   padding: 0;
+   margin: 0;
+   display: flex;
+   justify-content: center;
+   gap: 10px;
+   flex-wrap: wrap;
+}
+
+header nav a {
+   text-decoration: none;
+   color: var(--text-color);
+   font-weight: 700;
+   padding: 10px 20px;
+   border-radius: 8px;
+   transition: all 0.3s ease;
+   border: 1px solid transparent;
+   display: flex;
+   align-items: center;
+   gap: 8px;
+}
+
+header nav a:hover,
+header nav a.active {
+   background-color: rgba(255, 255, 255, 0.1);
+   color: var(--header-color);
+}
+
+header nav i {
+   font-size: 0.9em;
+}
+
+/* Sección de introducción */
+.intro-section {
+   margin-bottom: 30px;
+   padding: 20px;
+   background: rgba(28, 28, 46, 0.5);
+   border-radius: 12px;
+   border-left: 4px solid var(--accent-color);
+}
+
+.key-metrics {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+   gap: 15px;
+   margin-bottom: 20px;
+}
+
+.metric-card {
+   background: rgba(46, 46, 75, 0.7);
+   padding: 20px;
+   border-radius: 12px;
+   text-align: center;
+   transition: all 0.3s ease;
+   border: 1px solid var(--border-color);
+}
+
+.metric-card:hover {
+   transform: translateY(-5px);
+   background: rgba(46, 46, 75, 0.9);
+   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.metric-card i {
+   font-size: 2rem;
+   color: var(--accent-color);
+   margin-bottom: 10px;
+}
+
+.metric-card p {
+   font-size: 2.5rem;
+   margin: 5px 0;
+   color: var(--header-color);
+   font-weight: 700;
+}
+
+.metric-card small {
+   color: var(--text-color);
+   opacity: 0.8;
+   font-size: 0.9rem;
+   display: block;
+}
+
+.summary-metrics {
+   text-align: center;
+   padding: 15px;
+   background: rgba(46, 46, 75, 0.3);
+   border-radius: 8px;
+}
+
+.summary-metrics p {
+   margin: 8px 0;
+   font-size: 1.1em;
+}
+
+.summary-metrics span {
+   font-weight: 700;
+   color: var(--green-accent);
+}
+
+/* Dashboard grid */
 .dashboard {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-    gap: 25px;
-    max-width: 1800px;
-    margin: 0 auto;
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr));
+   gap: 25px;
+   max-width: 1800px;
+   margin: 0 auto;
 }
 
+/* Tarjetas */
 .card {
-    background: var(--card-bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 25px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-    display: flex;
-    flex-direction: column;
-    border-top: 4px solid var(--accent-color);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+   background: var(--card-bg-color);
+   border: 1px solid var(--border-color);
+   border-radius: 12px;
+   padding: 25px;
+   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+   display: flex;
+   flex-direction: column;
+   border-top: 4px solid var(--accent-color);
+   transition: all 0.3s ease;
 }
-.card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5); }
-.card h3 { margin: 0 0 15px 0; color: var(--header-color); border-bottom: 1px solid var(--border-color); padding-bottom: 15px; font-weight: 700; }
-.card p { margin: 0 0 20px 0; line-height: 1.6; }
 
-.full-width-card, .text-card { grid-column: 1 / -1; }
+.card:hover {
+   transform: translateY(-5px);
+   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
 
-.image-container, .gallery-viewer {
-    padding: 10px;
+.card h3 {
+   margin: 0 0 15px 0;
+   color: var(--header-color);
+   border-bottom: 1px solid var(--border-color);
+   padding-bottom: 15px;
+   font-weight: 700;
+   display: flex;
+   align-items: center;
+   gap: 10px;
+}
+
+.card p {
+   margin: 0 0 20px 0;
+}
+
+.full-width-card, .text-card {
+   grid-column: 1 / -1;
+}
+
+/* Contenedores de imágenes y galería */
+.image-container{
+   padding: 10px;
+   border: 1px solid var(--border-color);
+   border-radius: 8px;
+   background-color: #1c1c2e;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   overflow: hidden;
+   min-height: 300px;
+}
+
+.image-container img{
+   max-width: 100%;
+   height: auto;
+   display: block;
+}
+
+.zoomable {
+   cursor: zoom-in;
+}
+.gallery-viewer {
+    /* Define un ancho máximo para que el visor no sea excesivamente grande.
+       ¡Puedes ajustar este valor a tu gusto! (ej. 700px, 900px) */
+    max-width: 500px;
+    
+    /* Centra el visor horizontalmente dentro de la tarjeta de ancho completo */
+    margin-left: auto;
+    margin-right: auto;
+    
+    /* Añade un poco de espacio vertical para que no esté pegado al texto */
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    
+    /* Mantenemos los estilos que ya tenías */
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    background-color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    min-height: 300px; /* Esto evita que sea demasiado pequeño mientras carga */
+    background-color: #1c1c2e;
 }
-.image-container { flex-grow: 1; }
-.image-container img, .gallery-viewer img { max-width: 100%; max-height: 100%; height: auto; display: block; }
-.gallery-viewer { max-width: 650px; margin: 0 auto 20px auto; }
-.zoomable { cursor: zoom-in; }
 
-.gallery-controls { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }
+.gallery-viewer img {
+    /* Asegura que la imagen completa sea visible sin ser cortada o deformada.
+       'contain' es mejor que 'cover' para gráficos. */
+    object-fit: contain;
+    
+    /* El ancho debe ser el 100% de su contenedor padre (.gallery-viewer), que ahora tiene un max-width */
+    width: 100%;
+
+    /* La altura se ajusta automáticamente para mantener la proporción de la imagen */
+    height: auto;
+    
+    /* Opcional: Limita la altura máxima si los gráficos son muy altos */
+    max-height: 550px;
+    
+    display: block;
+}
+.gallery-controls {
+   display: flex;
+   justify-content: center;
+   flex-wrap: wrap;
+   gap: 10px;
+   margin-top: 15px;
+}
+
 .boxplot-btn {
-    background-color: #39395a;
-    color: var(--text-color);
-    border: 1px solid var(--border-color);
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 700;
-    transition: background-color 0.2s, color 0.2s;
+   background-color: rgba(138, 63, 252, 0.1);
+   color: var(--text-color);
+   border: 1px solid rgba(138, 63, 252, 0.3);
+   padding: 12px 20px;
+   border-radius: 8px;
+   cursor: pointer;
+   font-weight: 700;
+   transition: all 0.3s ease;
 }
-.boxplot-btn:hover { background-color: #4d4d7f; }
-.boxplot-btn.active { background-color: var(--accent-color); color: var(--header-color); border-color: var(--accent-color); }
 
-.table-wrapper { overflow-x: auto; }
-.report-table { width: 100%; border-collapse: collapse; font-size: 0.9em; min-width: 600px; }
-.report-table th, .report-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-.report-table th { background-color: var(--table-header-bg); font-weight: 700; color: var(--header-color); }
-.report-table tr:nth-child(even) { background-color: var(--table-row-even-bg); }
-
-.summary-metrics { margin-bottom: 25px; background-color: rgba(46, 46, 75, 0.5); padding: 20px; border-radius: 8px; border-left: 4px solid var(--accent-color); }
-.summary-metrics p { margin: 8px 0; font-size: 1.1em; }
-.summary-metrics span { font-weight: 700; color: var(--green-accent); }
-
-.dataset-info-block { background-color: #0b0b14; padding: 15px; border-radius: 8px; white-space: pre; font-family: 'SF Mono', 'Courier New', monospace; font-size: 0.85em; margin-bottom: 20px; overflow-x: auto; }
-
-footer { text-align: center; margin-top: 40px; color: #6c757d; }
-
-#error-overlay, #lightbox-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 1000; display: none; justify-content: center; align-items: center;
-    background-color: rgba(0, 0, 0, 0.9);
+.boxplot-btn:hover, .boxplot-btn.active {
+   background-color: var(--accent-color);
+   color: var(--header-color);
 }
-#lightbox-overlay { cursor: zoom-out; }
+
+/* Tablas */
+.table-wrapper {
+   overflow-x: auto;
+   margin-top: 15px;
+   border-radius: 8px;
+   border: 1px solid var(--border-color);
+}
+
+.report-table {
+   width: 100%;
+   border-collapse: collapse;
+}
+
+.report-table th, .report-table td {
+   padding: 12px 15px;
+   text-align: left;
+   border-bottom: 1px solid var(--border-color);
+}
+
+.report-table th {
+   background-color: var(--table-header-bg);
+   color: var(--header-color);
+}
+
+.report-table tr:nth-child(even) {
+   background-color: var(--table-row-even-bg);
+}
+
+.report-table tr:hover {
+   background-color: rgba(138, 63, 252, 0.1);
+}
+
+/* Footer */
+footer {
+   text-align: center;
+   margin-top: 40px;
+   padding: 20px;
+   color: #6c757d;
+   border-top: 1px solid var(--border-color);
+}
+/* ============================================================= */
+/* ===        ESTILOS PARA EL LIGHTBOX (VISOR DE IMAGEN)     === */
+/* ============================================================= */
+
+#lightbox-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    visibility: hidden;
+    opacity: 0;
+    z-index: 1000;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+#lightbox-overlay.show {
+    visibility: visible;
+    opacity: 1;
+}
+
 #lightbox-image {
     max-width: 90%;
     max-height: 90%;
-    border-radius: 5px;
-    box-shadow: 0 0 40px rgba(0,0,0,0.5);
     cursor: grab;
     transition: transform 0.2s ease;
-    animation: zoomIn 0.3s ease;
 }
-#lightbox-image:active { cursor: grabbing; }
-@keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-#zoom-controls {
-    position: absolute; bottom: 30px; left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 10px;
-    background: rgba(30, 30, 30, 0.8);
-    padding: 10px;
-    border-radius: 50px;
-    z-index: 1100;
-}
-#zoom-controls button {
-    background: #fff; color: #111; border: none;
-    width: 40px; height: 40px;
-    font-size: 22px; font-weight: bold;
-    cursor: pointer; border-radius: 50%;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    transition: background 0.2s ease, transform 0.1s ease;
-    line-height: 40px;
-}
-#zoom-controls button:hover { background: #eee; }
-#zoom-controls button:active { transform: scale(0.95); }
 
 .lightbox-close {
-    position: absolute; top: 20px; right: 35px; color: #fff;
-    font-size: 40px; font-weight: bold; cursor: pointer;
-    transition: color 0.2s, transform 0.2s;
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 2rem;
+    color: white;
+    cursor: pointer;
+    z-index: 1001;
 }
-.lightbox-close:hover { color: var(--red-accent); transform: rotate(90deg); }
 
-.error-message-box { background-color: var(--card-bg-color); padding: 40px 50px; border-radius: 12px; border: 2px solid var(--red-accent); text-align: center; box-shadow: 0 0 25px rgba(0, 0, 0, 0.5); }
-.error-message-box h2 { color: var(--red-accent); margin-top: 0; font-size: 1.8em; }
-.error-message-box p { font-size: 1.2em; line-height: 1.6; }
+#zoom-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1001;
+}
 
-header nav { margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px; }
-header nav ul { list-style: none; padding: 0; margin: 0; display: flex; justify-content: center; gap: 10px; }
-header nav a { text-decoration: none; color: var(--text-color); font-weight: 700; padding: 10px 20px; border-radius: 8px; transition: background-color 0.2s, color 0.2s; border: 1px solid transparent; }
-header nav a:hover { background-color: var(--border-color); color: var(--header-color); }
-header nav a.active { background-color: var(--accent-color); color: var(--header-color); border-color: var(--accent-color); box-shadow: 0 0 10px rgba(138, 63, 252, 0.5); }
+#zoom-controls button {
+    background-color: rgba(255, 255, 255, 0.8);
+    border: none;
+    padding: 10px;
+    font-size: 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
 
-.report-table caption { caption-side: top; font-size: 1.2em; font-weight: 700; padding: 10px; color: var(--header-color); text-align: left; margin-top: 20px; }
-.report-table td[rowspan] { vertical-align: middle; text-align: center; font-weight: 700; background-color: var(--table-header-bg); }
-.report-table code { background-color: rgba(255, 255, 255, 0.1); padding: 2px 6px; border-radius: 4px; font-family: 'SF Mono', 'Courier New', monospace; }
+/* Overlays y Modales */
+#error-overlay, #lightbox-overlay, #loading-overlay {
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   z-index: 1000;
+   display: none;
+   justify-content: center;
+   align-items: center;
+   background-color: rgba(0, 0, 0, 0.8);
+}
 
-/* =========== NUEVO BLOQUE: RESPONSIVE DESIGN =========== */
+/* =========== DISEÑO RESPONSIVE =========== */
+
+/* Tablets y Escritorios pequeños (Hasta 1024px) */
+@media (max-width: 1024px) {
+    .dashboard {
+        /* Ajuste para tablets, permite columnas un poco más estrechas */
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
+    }
+    
+    header {
+        padding: 1.5rem;
+    }
+    
+    .card {
+        padding: 20px;
+    }
+    
+    .metric-card p {
+        font-size: 2rem;
+    }
+}
+
+/* Móviles (Hasta 768px) */
 @media (max-width: 768px) {
     body {
-        padding: 10px;
+        padding: 10px; /* Menos padding en pantallas pequeñas */
     }
-
+    
+    header {
+        padding: 1.5rem 1rem;
+        margin: -10px -10px 30px -10px; /* Ajusta el margen negativo al nuevo padding */
+        border-radius: 0 0 15px 15px;
+    }
+    
     header h1 {
-        font-size: 1.8em;
+        font-size: 1.8rem;
     }
-    header h2 {
-        font-size: 1em;
+    
+    header p {
+        font-size: 1rem;
     }
-
-    /* Forzar una sola columna para el grid principal en móvil */
+    
     .dashboard {
-        grid-template-columns: 1fr;
+        /* En móvil, la regla del grid ya fuerza una sola columna, no es necesario cambiarla */
         gap: 20px;
     }
+    
+    .card {
+        padding: 15px;
+        /* Se desactiva la animación de entrada en móviles para mejor rendimiento */
+        animation: none; 
+        opacity: 1;
+        transform: none;
+    }
+    
+    /* Menú de navegación se apila verticalmente */
+    header nav ul {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    header nav a {
+        justify-content: center;
+    }
+    
+    /* Controles de galería se apilan */
+    .gallery-controls {
+        flex-direction: column;
+        align-items: stretch; /* Ocupan todo el ancho disponible */
+    }
+    
+    .boxplot-btn {
+        justify-content: center;
+    }
+}
 
+/* Pantallas muy pequeñas (Hasta 480px) */
+@media (max-width: 480px) {
+    header h1 {
+        font-size: 1.6rem;
+    }
+    
+    .card h3 {
+        font-size: 1.1rem;
+    }
+
+    /* Ajuste de padding para las tarjetas en pantallas muy pequeñas */
     .card {
         padding: 15px;
     }
-
-    /* Ajustes para la sección de introducción */
-    .intro-section {
-        flex-direction: column;
-        text-align: center;
-    }
-    .key-metrics {
-        flex-direction: column;
-        width: 100%;
-    }
-    .metric-card p {
-        font-size: 2em;
-    }
-
-    /* Asegurar que la galería de boxplots no se desborde */
-    .gallery-viewer {
-        max-width: 100%;
-    }
-
-    /* Desactivar el efecto de hover "lift" en dispositivos táctiles */
-    .card:hover {
-        transform: none;
-    }
-
-    /* Reducir el tamaño de los botones */
-    .boxplot-btn {
-        padding: 8px 15px;
-        font-size: 0.9em;
-    }
-
-    /* Hacer la fuente de las tablas un poco más pequeña */
-    .report-table {
-        font-size: 0.8em;
-    }
-    
-    /* Ajustar los controles de zoom para que no estorben */
-    #zoom-controls {
-        flex-direction: row;
-        bottom: 15px;
-        top: auto;
-        left: 50%;
-        transform: translateX(-50%);
-    }
-    
 }
