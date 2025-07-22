@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Configuración de rutas
-    const dataPath = 'frontend/data/';
+    const dataPath = 'frontend/output/';
     const errorOverlay = document.getElementById('error-overlay');
     const loadingOverlay = document.getElementById('loading-overlay');
     let hasLoadFailed = false;
