@@ -1,29 +1,23 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // Configuración de rutas
     const dataPath = 'frontend/output/';
     const errorOverlay = document.getElementById('error-overlay');
     const loadingOverlay = document.getElementById('loading-overlay');
     let hasLoadFailed = false;
     let loadedResources = 0;
-    const totalResources = 8; // Imágenes + archivos de texto
+    const totalResources = 8; 
 
-    // Mostrar pantalla de carga inicial
     loadingOverlay.style.display = 'flex';
     
-    // --- MANEJO DE ERRORES ---
     function showErrorOverlay(errorMessage) {
         if (hasLoadFailed) return;
         hasLoadFailed = true;
         console.error("Error de carga:", errorMessage);
         
-        // Ocultar pantalla de carga
         loadingOverlay.style.display = 'none';
         
-        // Mostrar overlay de error
         if (errorOverlay) {
             errorOverlay.style.display = 'flex';
             
-            // Configurar botón de reintento
             const retryButton = document.getElementById('retry-button');
             if (retryButton) {
                 retryButton.addEventListener('click', function() {
@@ -37,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- CARGA DE RECURSOS ---
     function loadImage(elementId, fileName) {
         const element = document.getElementById(elementId);
         if (!element) return;
@@ -56,42 +49,31 @@ document.addEventListener('DOMContentLoaded', function() {
     function resourceLoaded() {
         loadedResources++;
         if (loadedResources === totalResources) {
-            // Todas las imágenes cargadas, ocultar loader
             setTimeout(() => {
                 loadingOverlay.style.display = 'none';
                 document.body.style.overflow = 'auto';
                 
-                // Actualizar año en el footer
                 document.getElementById('current-year').textContent = new Date().getFullYear();
                 
-                // Actualizar fecha de última actualización
                 document.getElementById('last-updated').textContent = new Date().toLocaleString();
             }, 500);
         }
     }
 
-    // --- INICIALIZACIÓN DEL DASHBOARD ---
     function initializeDashboard() {
-        // Cargar imágenes principales
-        loadImage('riskMapImage', 'mapa_riesgo.png');
+        loadImage('riskMapImage', 'risk_map_heatmap_final.png');
         loadImage('performancePlot', 'performance_plot.png');
-        loadImage('shapSummaryPlot', 'shap_summary_plot.png');
-        loadImage('shapBarPlot', 'shap_bar_plot.png');
+        loadImage('shapSummaryPlot', 'shap_summary_plot_rf.png');
+        loadImage('shapBarPlot', 'shap_bar_plot_rf.png');
         loadImage('distribucionMuestra', 'mapa_distribucion_muestra.png');
         loadImage('particionEspacial', 'mapa_particion_espacial.png');
 
-        // Inicializar galería de boxplots
         initializeBoxplotGallery();
-        
-        // Cargar reportes de texto
         loadAndDisplayReport('classificationReportContainer', 'classification_report.txt', parseClassificationReport);
         loadAndDisplayReport('datasetSummaryContainer', 'dataset_summary.txt', parseDatasetSummary);
-        
-        // Inicializar lightbox
         initializeLightbox();
     }
 
-    // --- GALERÍA DE BOXPLOTS ---
     function initializeBoxplotGallery() {
         const boxplotDisplay = document.getElementById('boxplotDisplay');
         const boxplotBtns = document.querySelectorAll('.boxplot-btn');
@@ -109,10 +91,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-
-    // --- PARSEO Y VISUALIZACIÓN DE REPORTES ---
-    
-    // Parser para el reporte de clasificación (ya es robusto)
 function parseClassificationReport(text) {
     const lines = text.split('\n').filter(line => line.trim() !== '');
     const summaryMetrics = {};
@@ -132,13 +110,11 @@ function parseClassificationReport(text) {
         }
     });
 
-    // Mostrar métricas resumen
     let html = '<div class="summary-metrics">';
     html += `<p>Accuracy: <span>${summaryMetrics['Accuracy'] || 'N/A'}</span></p>`;
     html += `<p>ROC AUC Score: <span>${summaryMetrics['ROC AUC Score'] || 'N/A'}</span></p>`;
     html += '</div>';
 
-    // Mostrar tabla
     html += '<table class="report-table"><thead><tr>' + tableHeader + '</tr></thead><tbody>';
     
     tableRows.forEach(row => {
@@ -167,7 +143,6 @@ function parseClassificationReport(text) {
 
     html += '</tbody></table>';
 
-    // Actualizar KPIs visuales
     const fireRow = tableRows.find(row => row.includes('Incendio'));
     if (fireRow) {
         const fireCount = fireRow.split(/\s+/).pop();
@@ -221,10 +196,9 @@ function parseClassificationReport(text) {
 
             html += '</tbody></table>';
             
-            // Extraer área cubierta si está disponible
             const areaMatch = infoPart.match(/Total samples:\s*(\d+)/);
             if (areaMatch && areaMatch[1]) {
-                const areaKm2 = Math.round(areaMatch[1] * 0.03); // Aproximación de 0.03 km² por muestra
+                const areaKm2 = Math.round(areaMatch[1] * 0.03); 
                 const areaElement = document.getElementById('area-covered');
                 if (areaElement) {
                     areaElement.textContent = areaKm2.toLocaleString();
@@ -253,7 +227,6 @@ function parseClassificationReport(text) {
             });
     }
 
-    // --- LIGHTBOX CON ZOOM Y ARRASTRE ---
 function initializeLightbox() {
     const lightbox = document.getElementById('lightbox-overlay');
     const lightboxImage = document.getElementById('lightbox-image');
@@ -297,24 +270,23 @@ function initializeLightbox() {
         lightbox.classList.remove('show');
         setTimeout(() => {
             lightbox.style.display = 'none';
-        }, 300); // Espera a que termine la animación
+        }, 300); 
         document.body.style.overflow = '';
     }
 
 lightbox.addEventListener('click', (e) => {
     if (e.target === lightbox) {
-        closeLightbox(); // cerrar si clic fuera de imagen
+        closeLightbox(); 
     }
 });
 
 if (lightboxClose) {
     lightboxClose.addEventListener('click', (e) => {
-        e.stopPropagation(); // evitar que se propague al overlay
+        e.stopPropagation(); 
         closeLightbox();
     });
 }
 
-    // Eventos de teclado
     document.addEventListener('keydown', (e) => {
         if (!lightbox.classList.contains('show')) return;
         
@@ -341,7 +313,6 @@ if (lightboxClose) {
         }
     });
 
-    // Controles de zoom
     zoomInBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         scale = Math.min(scale + 0.2, 5);
@@ -363,7 +334,6 @@ if (lightboxClose) {
         resetZoom();
     });
 
-    // Arrastre de imagen
     lightboxImage.addEventListener('mousedown', (e) => {
         if (scale <= 1) return;
         isDragging = true;
@@ -389,7 +359,6 @@ if (lightboxClose) {
         }
     });
 
-    // Soporte táctil para móviles
     lightboxImage.addEventListener('touchstart', (e) => {
         if (scale <= 1) return;
         isDragging = true;
@@ -412,10 +381,8 @@ if (lightboxClose) {
         isDragging = false;
     });
 
-    // Inicializar cursor
     lightboxImage.style.cursor = 'zoom-in';
 }
 
-    // --- INICIAR LA APLICACIÓN ---
     initializeDashboard();
 });

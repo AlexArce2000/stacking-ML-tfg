@@ -12,7 +12,6 @@
    --blue-accent: #4589ff;
 }
 
-/* Estilos base */
 * {
    box-sizing: border-box;
    margin: 0;
@@ -28,7 +27,6 @@ body {
    line-height: 1.6;
 }
 
-/* Encabezado */
 header {
    text-align: center;
    margin-bottom: 40px;
@@ -52,7 +50,6 @@ header p {
    margin: 0 auto 20px auto;
 }
 
-/* Navegación */
 header nav {
    margin-top: 25px;
    border-top: 1px solid rgba(255, 255, 255, 0.2);
@@ -92,7 +89,6 @@ header nav i {
    font-size: 0.9em;
 }
 
-/* Sección de introducción */
 .intro-section {
    margin-bottom: 30px;
    padding: 20px;
@@ -160,7 +156,6 @@ header nav i {
    color: var(--green-accent);
 }
 
-/* Dashboard grid */
 .dashboard {
    display: grid;
    grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr));
@@ -169,7 +164,6 @@ header nav i {
    margin: 0 auto;
 }
 
-/* Tarjetas */
 .card {
    background: var(--card-bg-color);
    border: 1px solid var(--border-color);
@@ -206,7 +200,6 @@ header nav i {
    grid-column: 1 / -1;
 }
 
-/* Contenedores de imágenes y galería */
 .image-container{
    padding: 10px;
    border: 1px solid var(--border-color);
@@ -229,52 +222,35 @@ header nav i {
    cursor: zoom-in;
 }
 .gallery-viewer {
-    /* Define un ancho máximo para que el visor no sea excesivamente grande.
-       ¡Puedes ajustar este valor a tu gusto! (ej. 700px, 900px) */
     max-width: 500px;
-    
-    /* Centra el visor horizontalmente dentro de la tarjeta de ancho completo */
     margin-left: auto;
     margin-right: auto;
-    
-    /* Añade un poco de espacio vertical para que no esté pegado al texto */
     margin-top: 1rem;
     margin-bottom: 1rem;
-    
-    /* Mantenemos los estilos que ya tenías */
     border: 1px solid var(--border-color);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    min-height: 300px; /* Esto evita que sea demasiado pequeño mientras carga */
+    min-height: 300px; 
     background-color: #1c1c2e;
 }
 
 .gallery-viewer img {
-    /* Asegura que la imagen completa sea visible sin ser cortada o deformada.
-       'contain' es mejor que 'cover' para gráficos. */
     object-fit: contain;
-    
-    /* El ancho debe ser el 100% de su contenedor padre (.gallery-viewer), que ahora tiene un max-width */
     width: 100%;
-
-    /* La altura se ajusta automáticamente para mantener la proporción de la imagen */
     height: auto;
-    
-    /* Opcional: Limita la altura máxima si los gráficos son muy altos */
     max-height: 550px;
-    
     display: block;
 }
-.gallery-controls {
+/* .gallery-controls {
    display: flex;
    justify-content: center;
    flex-wrap: wrap;
    gap: 10px;
    margin-top: 15px;
-}
+} */
 
 .boxplot-btn {
    background-color: rgba(138, 63, 252, 0.1);
@@ -292,7 +268,6 @@ header nav i {
    color: var(--header-color);
 }
 
-/* Tablas */
 .table-wrapper {
    overflow-x: auto;
    margin-top: 15px;
@@ -324,7 +299,6 @@ header nav i {
    background-color: rgba(138, 63, 252, 0.1);
 }
 
-/* Footer */
 footer {
    text-align: center;
    margin-top: 40px;
@@ -332,9 +306,6 @@ footer {
    color: #6c757d;
    border-top: 1px solid var(--border-color);
 }
-/* ============================================================= */
-/* ===        ESTILOS PARA EL LIGHTBOX (VISOR DE IMAGEN)     === */
-/* ============================================================= */
 
 #lightbox-overlay {
     position: fixed;
@@ -393,7 +364,6 @@ footer {
     cursor: pointer;
 }
 
-/* Overlays y Modales */
 #error-overlay, #lightbox-overlay, #loading-overlay {
    position: fixed;
    top: 0;
@@ -406,13 +376,161 @@ footer {
    align-items: center;
    background-color: rgba(0, 0, 0, 0.8);
 }
+.variable-categories .category-btn {
+    background-color: rgba(138, 63, 252, 0.1);
+    color: var(--text-color);
+    border: 1px solid var(--accent-color);
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.3s ease; 
+    position: relative;
+    top: 0;
+}
 
-/* =========== DISEÑO RESPONSIVE =========== */
+.variable-categories .category-btn:hover {
+    background-color: var(--accent-color);
+    color: var(--header-color);
+    transform: translateY(-3px); 
+    box-shadow: 0 8px 15px rgba(138, 63, 252, 0.2);
+}
 
-/* Tablets y Escritorios pequeños (Hasta 1024px) */
+.variable-categories .category-btn.active {
+    background-color: var(--accent-color);
+    color: var(--header-color);
+    box-shadow: 0 4px 10px rgba(138, 63, 252, 0.3);
+    transform: translateY(-2px);
+}
+
+.variable-categories .category-btn:focus-visible {
+    outline: 2px solid var(--green-accent); 
+    outline-offset: 2px;
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-box input[type="text"] {
+    width: 100%;
+    padding: 10px 15px 10px 40px; 
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: #1c1c2e;
+    color: var(--text-color);
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.search-box input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent-color); 
+    box-shadow: 0 0 8px rgba(138, 63, 252, 0.3);
+}
+
+.search-box .fa-search {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-color);
+    opacity: 0.6;
+}
+
+td code {
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+    position: relative; 
+}
+
+td code:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+td code::after {
+    content: '¡Copiado!';
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--green-accent);
+    color: var(--header-color);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+    white-space: nowrap;
+}
+
+td code.copied::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ============================================================= */
+/* ===      ESTILOS PARA LAS PESTAÑAS DE BOXPLOTS            === */
+/* ============================================================= */
+
+.boxplot-controls {
+    margin-top: 20px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+}
+
+.boxplot-category-tabs {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    background-color: transparent;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn:hover {
+    background-color: var(--card-bg-color);
+    border-color: var(--accent-color);
+}
+
+.tab-btn.active {
+    background-color: var(--accent-color);
+    color: var(--header-color);
+    border-color: var(--accent-color);
+}
+
+/* El contenedor para los grupos de botones */
+.gallery-controls-wrapper {
+    min-height: 50px; /* Evita que la página "salte" al cambiar de pestaña */
+}
+
+/* El estilo para .gallery-controls (que ya tenías) funciona bien aquí */
+.gallery-controls {
+   display: flex;
+   justify-content: center;
+   flex-wrap: wrap;
+   gap: 10px;
+}
 @media (max-width: 1024px) {
     .dashboard {
-        /* Ajuste para tablets, permite columnas un poco más estrechas */
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
     }
     
@@ -429,15 +547,14 @@ footer {
     }
 }
 
-/* Móviles (Hasta 768px) */
 @media (max-width: 768px) {
     body {
-        padding: 10px; /* Menos padding en pantallas pequeñas */
+        padding: 10px; 
     }
     
     header {
         padding: 1.5rem 1rem;
-        margin: -10px -10px 30px -10px; /* Ajusta el margen negativo al nuevo padding */
+        margin: -10px -10px 30px -10px;
         border-radius: 0 0 15px 15px;
     }
     
@@ -450,19 +567,16 @@ footer {
     }
     
     .dashboard {
-        /* En móvil, la regla del grid ya fuerza una sola columna, no es necesario cambiarla */
         gap: 20px;
     }
     
     .card {
         padding: 15px;
-        /* Se desactiva la animación de entrada en móviles para mejor rendimiento */
         animation: none; 
         opacity: 1;
         transform: none;
     }
     
-    /* Menú de navegación se apila verticalmente */
     header nav ul {
         flex-direction: column;
         gap: 5px;
@@ -472,10 +586,9 @@ footer {
         justify-content: center;
     }
     
-    /* Controles de galería se apilan */
     .gallery-controls {
         flex-direction: column;
-        align-items: stretch; /* Ocupan todo el ancho disponible */
+        align-items: stretch; 
     }
     
     .boxplot-btn {
@@ -483,7 +596,6 @@ footer {
     }
 }
 
-/* Pantallas muy pequeñas (Hasta 480px) */
 @media (max-width: 480px) {
     header h1 {
         font-size: 1.6rem;
@@ -493,7 +605,6 @@ footer {
         font-size: 1.1rem;
     }
 
-    /* Ajuste de padding para las tarjetas en pantallas muy pequeñas */
     .card {
         padding: 15px;
     }

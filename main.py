@@ -339,26 +339,26 @@ print(f"Resumen del dataset guardado en: {ruta_resumen_dataset}")
 print("\n--- INICIANDO FASE DE MODELADO CON VALIDACIÓN ESPACIAL ---")
 """
 Separar datos con un BLOQUE ESPACIAL
-En lugar de una división aleatoria, dividiremos el departamento geográficamente.
-Usaremos la longitud como criterio: entrenaremos con los datos del 70% occidental
-del departamento y probaremos con el 30% oriental.
+Tras el análisis de sanidad, se observó que una división por longitud (Este/Oeste)
+creaba conjuntos de datos muy diferentes. Se procede a dividir por latitud (Norte/Sur)
+para obtener una partición más balanceada y una evaluación del modelo más robusta.
+Se usará un corte del 50% para un equilibrio aún mayor.
 """
-# Añadimos las coordenadas 'y' al DataFrame para poder filtrar
-datos_modelo['y'] = datos_depurados.geometry.y
+# Añadimos las coordenadas 'y' (latitud) al DataFrame para poder filtrar
+datos_modelo['latitud'] = datos_depurados.geometry.y
 
-# Calculamos el punto de corte (el percentil 70 de las latitudes)
-split_point = datos_modelo['y'].quantile(0.7)
+# Calculamos el punto de corte (el percentil 50 de las latitudes)
+split_point = datos_modelo['latitud'].quantile(0.5)
 
-# Creamos los conjuntos de entrenamiento y prueba usando la columna 'y'
-train_df = datos_modelo[datos_modelo['y'] <= split_point]
-test_df = datos_modelo[datos_modelo['y'] > split_point]
+# Creamos los conjuntos de entrenamiento y prueba usando la columna 'latitud'
+train_df = datos_modelo[datos_modelo['latitud'] <= split_point]
+test_df = datos_modelo[datos_modelo['latitud'] > split_point]
 
-# Eliminar la columna 'y' que ya no necesitamos para el entrenamiento
-train_df = train_df.drop(columns=['y'])
-test_df = test_df.drop(columns=['y'])
+# Eliminar la columna 'latitud' que ya no necesitamos para el entrenamiento
+train_df = train_df.drop(columns=['latitud'])
+test_df = test_df.drop(columns=['latitud'])
 
-
-print(f"División espacial: {len(train_df)} muestras para entrenar, {len(test_df)} para probar.")
+print(f"División espacial por LATITUD: {len(train_df)} muestras para entrenar, {len(test_df)} para probar.")
 
 # Comprobar que ambas clases están presentes en ambos conjuntos
 if train_df['fire'].nunique() < 2 or test_df['fire'].nunique() < 2:
@@ -442,12 +442,12 @@ for var in variables_a_comparar:
 # --- Hipótesis 2: ¿Es la partición espacial representativa? ---
 print("\nGenerando mapa de la partición Train/Test espacial...")
 
-# Recreamos la división para obtener los índices y geometrías
+# Recreamos la división (ahora por LATITUD) para obtener los índices y geometrías
 temp_df_vis = datos_depurados.copy()
-temp_df_vis['x'] = temp_df_vis.geometry.x
-split_point_vis = temp_df_vis['x'].quantile(0.7)
-train_indices = temp_df_vis[temp_df_vis['x'] <= split_point_vis].index
-test_indices = temp_df_vis[temp_df_vis['x'] > split_point_vis].index
+temp_df_vis['latitud'] = temp_df_vis.geometry.y # Usamos la coordenada 'y' (latitud)
+split_point_vis = temp_df_vis['latitud'].quantile(0.5) # Usamos el mismo corte 50/50
+train_indices = temp_df_vis[temp_df_vis['latitud'] <= split_point_vis].index
+test_indices = temp_df_vis[temp_df_vis['latitud'] > split_point_vis].index
 
 train_gdf_vis = datos_depurados.loc[train_indices]
 test_gdf_vis = datos_depurados.loc[test_indices]
@@ -458,8 +458,8 @@ area_estudio_gdf.plot(ax=ax, facecolor='whitesmoke', edgecolor='black', linewidt
 train_gdf_vis.plot(ax=ax, marker='o', color='dodgerblue', markersize=5, label=f'Train ({len(train_gdf_vis)} puntos)')
 test_gdf_vis.plot(ax=ax, marker='o', color='orangered', markersize=5, label=f'Test ({len(test_gdf_vis)} puntos)')
 
-# Dibujar la línea de división
-ax.axvline(x=split_point_vis, color='black', linestyle='--', linewidth=2, label=f'Línea de Corte (Longitud={split_point_vis:.2f})')
+# Dibujar la línea de división HORIZONTAL
+ax.axhline(y=split_point_vis, color='black', linestyle='--', linewidth=2, label=f'Línea de Corte (Latitud={split_point_vis:.2f})')
 
 ax.set_title('Visualización de la Partición Espacial Train/Test', fontsize=18)
 ax.legend()
@@ -468,7 +468,58 @@ plt.savefig(OUTPUT_DIR / "mapa_particion_espacial.png", dpi=300)
 plt.show()
 
 print("--- ANÁLISIS DE SANIDAD COMPLETADO ---")
+# ==============================================================================
+# 4.6 ANÁLISIS DE SANIDAD DE LA PARTICIÓN ESPACIAL (NUEVA SECCIÓN)
+# ==============================================================================
+print("\n--- INICIANDO ANÁLISIS DE SANIDAD DE LA PARTICIÓN TRAIN/TEST ---")
+print("Comparando la distribución de variables entre el conjunto de entrenamiento y prueba...")
 
+# 1. Crear un DataFrame combinado para facilitar la visualización
+# Añadimos una columna a cada subconjunto para saber su origen
+train_df_vis = train_df.copy()
+train_df_vis['set'] = 'Train'
+
+test_df_vis = test_df.copy()
+test_df_vis['set'] = 'Test'
+
+# Los concatenamos en un solo DataFrame
+combined_df_vis = pd.concat([train_df_vis, test_df_vis], ignore_index=True)
+
+# 2. Definir las variables numéricas que queremos comparar
+# Asegúrate de que estas columnas existen en tus DataFrames
+variables_numericas_a_comparar = [
+    'elevacion', 
+    'pendiente', 
+    'ndvi', 
+    'temperature', 
+    'precipitation', 
+    'humidity', 
+    'wind_speed',
+    'dist_vias', 
+    'dist_ciudades'
+]
+
+# 3. Iterar sobre cada variable y crear un gráfico de cajas
+for var in variables_numericas_a_comparar:
+    plt.figure(figsize=(10, 7))
+    sns.boxplot(x='set', y=var, data=combined_df_vis, palette=['#3498db', '#f39c12']) # Azul para Train, Naranja para Test
+    
+    # Añadir títulos y etiquetas para mayor claridad
+    plt.title(f'Distribución de "{var}"\n en los conjuntos de Train vs. Test', fontsize=16)
+    plt.xlabel('Conjunto de Datos', fontsize=12)
+    plt.ylabel(f'Valor de {var}', fontsize=12)
+    plt.grid(True, linestyle='--', alpha=0.6)
+    
+    # Guardar la figura en la carpeta de resultados
+    # Asegúrate de que la variable OUTPUT_DIR esté definida como en tu script
+    ruta_guardado = OUTPUT_DIR / f'boxplot_partition_{var}.png'
+    plt.savefig(ruta_guardado, dpi=300, bbox_inches='tight')
+    
+    # Mostrar el gráfico en pantalla
+    plt.show()
+
+print("--- ANÁLISIS DE SANIDAD DE LA PARTICIÓN COMPLETADO ---")
+print(f"Los gráficos de comparación han sido guardados en: {OUTPUT_DIR}")
 # ==========================================c====================================
 # 5.6. GUARDADO DE RESULTADOS Y VISUALIZACIÓN
 # ==============================================================================
@@ -743,24 +794,31 @@ import shutil
 print("\n--- COPIANDO ARTEFACTOS PARA EL FRONTEND ---")
 
 # Ruta a la carpeta fija que leerá el frontend
-frontend_data_dir = Path("frontend") / "ouput"
+frontend_data_dir = Path("frontend") / "output"
 frontend_data_dir.mkdir(parents=True, exist_ok=True)
 
-# Lista de los archivos que queremos mostrar en el frontend
-# La clave es el nombre del archivo original, el valor es el nuevo nombre (más simple)
 files_to_copy = {
     "boxplot_dist_ciudades_vs_fire.png":"boxplot_dist_ciudades_vs_fire.png",
     "boxplot_dist_vias_vs_fire.png":"boxplot_dist_vias_vs_fire.png",
     "boxplot_elevacion_vs_fire.png":"boxplot_elevacion_vs_fire.png",
     "boxplot_ndvi_vs_fire.png":"boxplot_ndvi_vs_fire.png",
     "boxplot_pendiente_vs_fire.png":"boxplot_pendiente_vs_fire.png",
+    "boxplot_partition_dist_ciudades.png":"boxplot_partition_dist_ciudades.png",
+    "boxplot_partition_dist_vias.png":"boxplot_partition_dist_vias.png",
     "predicciones_riesgo.csv": "predicciones_riesgo.csv",
+    "boxplot_partition_elevacion.png":"boxplot_partition_elevacion.png",
+    "boxplot_partition_humidity.png":"boxplot_partition_humidity.png",
+    "boxplot_partition_ndvi.png":"boxplot_partition_ndvi.png",
+    "boxplot_partition_pendiente.png":"boxplot_partition_pendiente.png",
+    "boxplot_partition_precipitation.png":"boxplot_partition_precipitation.png",
+    "boxplot_partition_temperature.png":"boxplot_partition_temperature.png",
+    "boxplot_partition_wind_speed.png":"boxplot_partition_wind_speed.png",
     "classification_report.txt": "classification_report.txt",
     "dataset_summary.txt": "dataset_summary.txt",
     "performance_plot.png": "performance_plot.png",
-    "risk_map_heatmap_final.png": "mapa_riesgo.png",
-    "shap_summary_plot_rf.png": "shap_summary_plot.png",
-    "shap_bar_plot_rf.png": "shap_bar_plot.png",
+    "risk_map_heatmap_final.png": "risk_map_heatmap_final.png",
+    "shap_summary_plot_rf.png": "shap_summary_plot_rf.png",
+    "shap_bar_plot_rf.png": "shap_bar_plot_rf.png",
     "mapa_distribucion_muestra.png": "mapa_distribucion_muestra.png",
     "mapa_particion_espacial.png": "mapa_particion_espacial.png"
 }
