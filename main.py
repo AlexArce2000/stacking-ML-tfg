@@ -837,3 +837,29 @@ for original_name, new_name in files_to_copy.items():
 
 print(f"\nSe copiaron {len(copied_files)} archivos a la carpeta '{frontend_data_dir}'.")
 print("El frontend está listo para ser visualizado.")
+
+# ==============================================================================
+# PARA LOS GRAFICOS
+# ==============================================================================
+import pickle
+
+print("\n--- Guardando resultados del modelo para evaluación avanzada ---")
+
+# Creamos un diccionario para guardar todo lo que necesitamos
+results_for_eval = {
+    'model': full_pipeline,
+    'X_test': X_test,
+    'y_test': y_test,
+    'y_pred_proba': y_pred_proba
+}
+
+# Guardamos el diccionario en un archivo pickle
+output_path_pkl = "resultados_modelo_para_eval.pkl"
+with open(output_path_pkl, 'wb') as f:
+    pickle.dump(results_for_eval, f)
+
+print(f"Resultados del modelo guardados en: {output_path_pkl}")
+# Guarda el dataframe para que el script de EDA pueda usarlo
+
+datos_depurados.to_pickle("datos_depurados_para_eda.pkl")
+print("DataFrame 'datos_depurados' guardado en datos_depurados_para_eda.pkl")
