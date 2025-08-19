@@ -18,32 +18,47 @@ LogisticRegression.
 ## Estructura del proyecto
 
 ```
-├── data/                # Carpeta ignorada por Git. Contiene los datos de entrada.
-│   ├── Cobertura_del_Suelo/     # Datos geoespaciales relacionados con bosque, pastizal, etc.
-│   ├── COORDILLERA/     # Datos geoespaciales relacionados con la cordillera.
-│   ├── DEM/             # Datos del modelo digital de elevación (DEM).
-│   ├── FIRMS/           # Datos de incendios (FIRMS).
-│   ├── Humedad/       # Datos de humedad relativa.
-│   ├── Precipitation/ # Datos de precipitación.
-│   ├── Temperature/   # Datos de temperatura del aire.
-│   └── Wind/          # Datos de velocidad del viento.
-│   └── NDVI/            # Índice de vegetación de diferencia normalizada.
-├── frontend/          # Frontend básico para el dashboard de resultados  
-│   │   ├── output/       # Últimos datos copiados desde el ouputs del pipeline.
-│   │   ├── js/        # carpeta con los js       
-│   │   ├── style/     # carpeta con los css
-│   │   ├── variables.html/ 
-├── outputs/             
-├── outputs_focos_reales/              
-├── .gitignore           
-├── clear_outputs.py     # Script de utilidad para limpiar la carpeta de resultados.
-├── focos_cordillera.py  # Script de utilidad para reporta lo que realmente sucedió.
-├── focos_cordillera_historico_completo.py  # Script de utilidad para reporta el total de incendios 2018-2023.
-├── index.html              # Index para el dashboard
-├── main.py              # Script principal que ejecuta todo el flujo: carga, preprocesa, entrena y predice.
-├── requirements.txt     # Lista de librerías de Python necesarias.
-└── README.md            # Este archivo.
-
+.
+├── data/                       # Carpeta con todos los datos de entrada brutos.
+│   ├── Cobertura_del_Suelo/    # Datos geoespaciales de cobertura (bosque, pastizal, etc.).
+│   ├── COORDILLERA/            # Shapefiles y datos vectoriales de la zona de estudio.
+│   ├── DEM/                    # Datos del Modelo Digital de Elevación.
+│   ├── FIRMS/                  # Datos de focos de calor de la NASA.
+│   ├── Humedad/                # Datos de humedad relativa.
+│   ├── NDVI/                   # Datos del Índice de Vegetación de Diferencia Normalizada.
+│   ├── Precipitation/          # Datos de precipitación.
+│   ├── Temperature/            # Datos de temperatura del aire.
+│   └── Wind/                   # Datos de velocidad del viento.
+│
+├── doc/                        # Carpeta para la documentación.
+│   └── documentacion_simple/   # Archivos LaTeX, mini documentación.
+│
+├── frontend/                   # Frontend básico para el dashboard de resultados.
+│   ├── output/                 # Últimos resultados copiados desde las carpetas 'outputs'.
+│   ├── js/                     # Archivos JavaScript para la interactividad.
+│   ├── style/                  # Archivos CSS para los estilos.
+│   └── variables.html          # (ejemplo de página del dashboard)
+│
+├── outputs/                    # Carpeta principal de resultados del pipeline de predicción (main.py).
+├── outputs_analisis_exploratorio/ # Resultados del Análisis Exploratorio de Datos (generados por generar_graficos_eda.py).
+├── outputs_evaluacion_modelo/  # Gráficos de evaluación avanzada del modelo (generados por generar_graficos_evaluacion.py).
+├── outputs_focos_reales/       # (Carpeta existente para reportes de focos).
+├── outputs_grandes_incendios/  # Resultados del script que identifica grandes incendios (generado por grandes_incendios.py).
+│
+├── .gitignore                  # Archivo que define qué ficheros y carpetas ignorar en Git.
+├── clear_outputs.py            # Script de utilidad para limpiar las carpetas de resultados.
+├── datos_depurados_para_eda.pkl # Archivo intermedio generado por main.py para ser usado por el script de EDA.
+├── focos_cordillera.py         # Script de utilidad para reportar lo que realmente sucedió.
+├── focos_cordillera_historico_completo.py # Script de utilidad para reportar el total de incendios 2018-2023.
+├── generar_graficos_eda.py     # Script dedicado a generar los gráficos del Análisis Exploratorio de Datos.
+├── generar_graficos_evaluacion.py # Script dedicado a generar los gráficos de evaluación avanzada del modelo.
+├── grandes_incendios.py        # Script que implementa el algoritmo para identificar grandes incendios.
+├── index.html                  # Página principal para el dashboard del frontend.
+├── main.py                     # Script principal que ejecuta el flujo: carga, preprocesa, entrena, predice y evalúa.
+├── notas.md                    # Notas y apuntes personales sobre el proyecto.
+├── README.md                   # Descripción general del proyecto.
+├── requirements.txt            # Lista de librerías de Python necesarias (ej. pandas, sklearn).
+└── resultados_modelo_para_eval.pkl # Archivo intermedio con el modelo y datos de prueba para la evaluación avanzada.
 ```
 
 
