@@ -7,7 +7,12 @@
 
 * https://drive.google.com/drive/folders/1E2Wbdy16W65BfXifNLOEWrCAh_Y_lrQQ?usp=drive_link
 
-**Dashboard básico**: https://alexarce2000.github.io/stacking-ML-tfg/
+**Dashboard básico**: 
+
+https://alexarce2000.github.io/stacking-ML-tfg/
+
+https://stacking-ml-tfg.vercel.app
+
 
 *Modelado:* 
 Stacking (RF + SVM + KNN) 
@@ -19,6 +24,11 @@ LogisticRegression.
 ```
 jupyter nbconvert --to html .\main.ipynb
 ```
+
+*Notebook vizualición:*
+
+https://stacking-ml-tfg.vercel.app/main.html
+
 
 ## Estructura del proyecto
 
