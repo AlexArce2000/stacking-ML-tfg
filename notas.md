@@ -8,7 +8,7 @@
 - [ ] Ajuste de Hiperparámetros (Investigar sobre RandomizedSearchCV de scikit-learn. Que es más eficiente que GridSearchCV) 
 - [X] Implementar Validación Cruzada Espacial (Spatial Cross-Validation) reemplazar train_test_split por una validación cruzada basada en bloques espaciales (Opcional)
 - [ ] Probablemente descomente el nombre de las ciudades del mapa de riesgo
-- [ ] Elaborar un colab mejor organizado (no sé si haré)
+- [X] Elaborar una noteboook jupyter 
 
 # DATASETS
 - [X] HUMEDAD
