@@ -15,6 +15,11 @@ Stacking (RF + SVM + KNN)
 *Meta-Modelo:* 
 LogisticRegression.
 
+**Vizualizr notebook en la web creando un .html:** 
+```
+jupyter nbconvert --to html .\main.ipynb
+```
+
 ## Estructura del proyecto
 
 ```
@@ -55,6 +60,8 @@ LogisticRegression.
 ├── grandes_incendios.py        # Script que implementa el algoritmo para identificar grandes incendios.
 ├── index.html                  # Página principal para el dashboard del frontend.
 ├── main.py                     # Script principal que ejecuta el flujo: carga, preprocesa, entrena, predice y evalúa.
+├── main.ipynb                  # Notebook del proyecto con análisis y visualizaciones interactivas.
+├── main.html                   # Versión HTML del notebook para compartir fácilmente.
 ├── notas.md                    # Notas y apuntes personales sobre el proyecto.
 ├── README.md                   # Descripción general del proyecto.
 ├── requirements.txt            # Lista de librerías de Python necesarias (ej. pandas, sklearn).
