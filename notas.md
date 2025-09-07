@@ -23,3 +23,11 @@
 - [ ] Variaciones de modelos
 - [ ] Variaciones de variables predictoras
 - [ ] Con los resultados seleccionar aquellas que irían dentro de un full paper
+
+
+# Experimentaciones y análisis sugeridos por Evaluadores
+- [ ] Evaluación de los modelos bases (Random Forest, SVM y K-Nearest Neighbors) para obtener una  nueva tabla de "resultados" que compare las métricas clave (Accuracy, AUC, Precisión, Recall, F1-Score) de Random Forest, SVM, KNN y el modelo de Stacking. Demostrar cuantitativamente que el modelo de ensamble (stacking) ofrece un rendimiento superior y justifica su uso, respondiendo directamente a la crítica de la Evaluación 3.
+- [ ] La validación en partición Este-Oeste (ya los había hecho pero para demostrar). Validación Cruzada Espacial (Spatial Cross-Validation): Dividir el mapa en varios "bloques" o "folds" geográficos. Entrena el modelo usando algunos bloques y valida en el bloque restante, rotando hasta que todos los bloques hayan sido usados para validación. Justificar de manera sólida tu método de validación y demostrar que los resultados no son un artefacto de la división norte-sur, abordando una de las principales preocupaciones de la Evaluación 2.
+- [ ] Utiliza el modelo Random Forest (que ya estás usando como modelo base) para calcular la importancia de cada una de las 11 variables predictoras. Esto te dirá qué factores (ej. temperatura, distancia a carreteras, tipo de vegetación) tienen más peso en la predicción de incendios. Un gráfico de barras en la sección de "Resultados" que muestre la importancia relativa de cada variable. Esto responde a la sugerencia de la Evaluación 2 sobre detallar el criterio de selección de variables.
+- [ ] **Opcional**. Aplicar el modelo entrenado para generar un mapa de riesgo para otro departamento de Paraguay que tenga características diferentes a Cordillera.
+- [ ] Validación Temporal Post-Agosto 2023, si ya se tiene los datos, utilizar el modelo ya entrenado para predecir el riesgo en ese nuevo periodo y comparar las predicciones con los incendios que realmente ocurrieron.
