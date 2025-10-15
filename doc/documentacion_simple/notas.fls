@@ -1,6 +1,6 @@
-PWD f:\FPUNA-SEMESTRES\extras_cosas\tesis\pruebas\stacking-ML-prueba\doc
+PWD f:\FPUNA-SEMESTRES\extras_cosas\tesis\pruebas\stacking-ML-prueba\doc\documentacion_simple
 INPUT C:\Users\usuario\AppData\Local\MiKTeX\miktex\data\le\pdftex\pdflatex.fmt
-INPUT f:\FPUNA-SEMESTRES\extras_cosas\tesis\pruebas\stacking-ML-prueba\doc\notas.tex
+INPUT f:\FPUNA-SEMESTRES\extras_cosas\tesis\pruebas\stacking-ML-prueba\doc\documentacion_simple\notas.tex
 OUTPUT notas.log
 INPUT C:\Program Files\MiKTeX\tex\latex\base\article.cls
 INPUT C:\Program Files\MiKTeX\tex\latex\base\article.cls

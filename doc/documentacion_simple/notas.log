@@ -1,10 +1,10 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.5.23)  29 JUL 2025 20:51
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.4) (preloaded format=pdflatex 2025.10.15)  15 OCT 2025 19:05
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**f:/FPUNA-SEMESTRES/extras_cosas/tesis/pruebas/stacking-ML-prueba/doc/notas.tex
-(f:/FPUNA-SEMESTRES/extras_cosas/tesis/pruebas/stacking-ML-prueba/doc/notas.tex
+**f:/FPUNA-SEMESTRES/extras_cosas/tesis/pruebas/stacking-ML-prueba/doc/documentacion_simple/notas.tex
+(f:/FPUNA-SEMESTRES/extras_cosas/tesis/pruebas/stacking-ML-prueba/doc/documentacion_simple/notas.tex
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-04-14>
 (C:\Program Files\MiKTeX\tex/latex/base\article.cls
@@ -785,14 +785,14 @@ Package logreq Info: Writing requests to 'notas.run.xml'.
  ) 
 Here is how much of TeX's memory you used:
  16964 strings out of 469940
- 295682 string characters out of 5479470
- 1129912 words of memory out of 5000000
+ 295913 string characters out of 5479469
+ 1129915 words of memory out of 5000000
  43525 multiletter control sequences out of 15000+600000
  632523 words of font info for 59 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 90i,7n,93p,763b,843s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 90i,7n,93p,784b,843s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <C:\Users\usuario\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm1000.pk><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmr6.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmr9.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmssbx10.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Program Files/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on notas.pdf (10 pages, 637630 bytes).
+Output written on notas.pdf (10 pages, 638132 bytes).
 PDF statistics:
  295 PDF objects out of 1000 (max. 8388607)
  86 named destinations out of 1000 (max. 500000)

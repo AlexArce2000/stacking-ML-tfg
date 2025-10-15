@@ -1,12 +1,11 @@
 # Fdb version 4
-["biber notas"] 0 "notas.bcf" "notas.bbl" "notas" 1753833121.04741 -1
-  "C:/Program Files/MiKTeX/bibtex/bib/feupphdteses/references.bib" 1366811700 2206 985e03fb36d872d306e76cfacc160693 ""
-  "notas.bcf" 1753833119 108087 51f8655dfc7ed08e0d1265dcfd1a4da1 "pdflatex"
+["biber notas"] 1760565922.23327 "notas.bcf" "notas.bbl" "notas" 1760565935.93007 0
+  "notas.bcf" 1760565934 108087 51f8655dfc7ed08e0d1265dcfd1a4da1 "pdflatex"
   (generated)
   "notas.bbl"
   "notas.blg"
   (rewritten before read)
-["pdflatex"] 1753833112.11568 "f:/FPUNA-SEMESTRES/extras_cosas/tesis/pruebas/stacking-ML-prueba/doc/notas.tex" "notas.pdf" "notas" 1753833121.04922 0
+["pdflatex"] 1760565929.61959 "f:/FPUNA-SEMESTRES/extras_cosas/tesis/pruebas/stacking-ML-prueba/doc/documentacion_simple/notas.tex" "notas.pdf" "notas" 1760565935.93262 0
   "C:/Program Files/MiKTeX/fonts/tfm/jknappen/ec/tcrm1000.tfm" 993062508 1436 c7f957a372ef2fbe93c0982f96625e12 ""
   "C:/Program Files/MiKTeX/fonts/tfm/public/cm/cmbx10.tfm" 1136765053 1328 c834bbb027764024c09d3d2bf908b5f0 ""
   "C:/Program Files/MiKTeX/fonts/tfm/public/cm/cmmi12.tfm" 1136765053 1524 4414a8315f39513458b80dfc63bff03a ""
@@ -98,17 +97,17 @@
   "C:/Program Files/MiKTeX/tex/latex/titling/titling.sty" 1252048308 7358 95ac619994bd30d405a74f3eca431c84 ""
   "C:/Program Files/MiKTeX/tex/latex/tools/multicol.sty" 1730400552 32879 f4cfa2226c995da5b04a89ee47abf182 ""
   "C:/Program Files/MiKTeX/tex/latex/url/url.sty" 1388490452 12796 8edb7d69a20b857904dd0ea757c14ec9 ""
-  "C:/Users/usuario/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1748016078 82845 61cd0b62b4b3ff8abe9a94ac0f89d652 ""
+  "C:/Users/usuario/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1755564779 82845 61cd0b62b4b3ff8abe9a94ac0f89d652 ""
   "C:/Users/usuario/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/tcrm1000.pk" 1715005183 11548 a7ec94ce2a91c64d682b173f4a046b03 ""
-  "C:/Users/usuario/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1748016148 13147621 ea5d0946aeae042e126a5aa8398a6d3e ""
-  "f:/FPUNA-SEMESTRES/extras_cosas/tesis/pruebas/stacking-ML-prueba/doc/notas.tex" 1753833100 45248 a855a78421af20683867a0c8c7ec1803 ""
-  "images/shap_summary_plot_rf.png" 1753595671 507792 c23a9c670c3d0ab68e8ed465865a4169 ""
-  "notas.aux" 1753833119 6161 935a847b02385c961d2301f58fd94340 "pdflatex"
-  "notas.bbl" 1753403915 486 76d65a242ec496c9b4361af646ff12cb "biber notas"
-  "notas.out" 1753833119 8328 270700c255225f603dbd037b4f46ac58 "pdflatex"
-  "notas.run.xml" 1753833119 2312 727519dc31a38613b60078ce649475a8 "pdflatex"
-  "notas.tex" 1753833100 45248 a855a78421af20683867a0c8c7ec1803 ""
-  "publication.sty" 1752787987 2858 6e4c8cdeb59b365bbf3fa4347f6d16b7 ""
+  "C:/Users/usuario/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1760565910 13147622 631ec803ad846c72d730a63f9981f27c ""
+  "f:/FPUNA-SEMESTRES/extras_cosas/tesis/pruebas/stacking-ML-prueba/doc/documentacion_simple/notas.tex" 1760565685 45248 a855a78421af20683867a0c8c7ec1803 ""
+  "images/shap_summary_plot_rf.png" 1760565684 507792 c23a9c670c3d0ab68e8ed465865a4169 ""
+  "notas.aux" 1760565934 6161 935a847b02385c961d2301f58fd94340 "pdflatex"
+  "notas.bbl" 1760565929 486 76d65a242ec496c9b4361af646ff12cb "biber notas"
+  "notas.out" 1760565934 8328 270700c255225f603dbd037b4f46ac58 "pdflatex"
+  "notas.run.xml" 1760565934 2312 727519dc31a38613b60078ce649475a8 "pdflatex"
+  "notas.tex" 1760565685 45248 a855a78421af20683867a0c8c7ec1803 ""
+  "publication.sty" 1760565685 2858 6e4c8cdeb59b365bbf3fa4347f6d16b7 ""
   (generated)
   "notas.aux"
   "notas.bcf"
