@@ -31,3 +31,8 @@
 - [ ] Utiliza el modelo Random Forest (que ya estás usando como modelo base) para calcular la importancia de cada una de las 11 variables predictoras. Esto te dirá qué factores (ej. temperatura, distancia a carreteras, tipo de vegetación) tienen más peso en la predicción de incendios. Un gráfico de barras en la sección de "Resultados" que muestre la importancia relativa de cada variable. Esto responde a la sugerencia de la Evaluación 2 sobre detallar el criterio de selección de variables.
 - [ ] **Opcional**. Aplicar el modelo entrenado para generar un mapa de riesgo para otro departamento de Paraguay que tenga características diferentes a Cordillera.
 - [ ] Validación Temporal Post-Agosto 2023, si ya se tiene los datos, utilizar el modelo ya entrenado para predecir el riesgo en ese nuevo periodo y comparar las predicciones con los incendios que realmente ocurrieron.
+
+
+# Nuevo artículo como base las variables más importantes para la predicción de incendios forestales.
+1. En lugar de hablar sobre el modelo predictivo, mencionar sobre las variables más importantes (sacar del mismo modelo), con qué variable logra el mayor porcentaje de aciertos...cuánto más diferente es del otro artículo, mejor...por una parte atacamos las variables más importantes y por otra parte construimos modelos predictivos con algoritmos individuales y también hicimos stacking.
+2. Usar la explicación de SHAP para ver cómo cada variable afecta la predicción del modelo.
