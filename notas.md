@@ -59,7 +59,7 @@ h (high): Alta confianza. Son incendios seguros.
 
 # Comparación de Modelos: Ponderación de Factores
 - Utilización del método híbrido Entropía-TOPSIS.
-Al usarlo se deja de discutir sobre "cuál tiene el AUC más alto" (donde la diferencia es mínima) y se pasa a evaluar la calidad integral del modelo.
+Al usarlo se deja de discutir sobre "cuál tiene el AUC más alto" (donde la diferencia es mínima) y se pasa a evaluar la calidad integral del modelo. [Al final descartamos la entropía de Shanonne y usamos solo TOPSIS con ponderación experta AHP]
 
 ### TOPSIS (Technique for Order Preference by Similarity to Ideal Solution) (Tecnica para el Ordenamiento por Similitud con la Solución Ideal)
 - La mejor alternativa es la que está más cerca de la solución ideal positiva y más lejos de la solución ideal negativa.
@@ -107,3 +107,26 @@ Cantidad de datos reales utilizados.
 Es el tiempo que tarda el modelo en dar una respuesta una vez que ya está entrenado y le entregas datos nuevos. 
 ### Memoria MB (Memory Footprint):
 Es el tamaño físico que ocupa el modelo "guardado" en la memoria RAM o en el disco duro para poder funcionar.
+
+
+# Métodología para la ponderación
+A continuación se presenta la tabla de ponderación y justificación de los criterios utilizados para evaluar los modelos de predicción de incendios forestales, aplicando la **metodología AHP** (Proceso Analítico Jerárquico):
+
+| Criterio | Importancia (AHP) | Justificación Científica | Peso Asignado ($w_i$) |
+| :--- | :--- | :--- | :---: |
+| **Recall (Sensibilidad)** | **Muy Crítica** | Prioridad absoluta. Minimizar Falsos Negativos (incendios no detectados) para evitar desastres ecológicos. | **35%** |
+| **F1-Score** | **Muy Alta** | Garantiza un balance robusto entre detectar el fuego y la precisión, evitando modelos sesgados. | **25%** |
+| **ROC AUC** | **Alta** | Mide la capacidad global del modelo para distinguir clases independientemente del umbral. | **15%** |
+| **Precision** | **Media** | Importante para reducir falsas alarmas, pero es secundario frente al riesgo de no detectar un incendio. | **10%** |
+| **Specificity** | **Media-Baja** | Capacidad de descartar zonas seguras. Ayuda a la eficiencia operativa, pero tiene menor impacto en seguridad. | **8%** |
+| **Accuracy** | **Baja** | Métrica referencial, considerada engañosa en datasets desbalanceados de incendios. | **5%** |
+| **Tiempo de Inferencia** | **Irrelevante** | Con transformación logarítmica, las diferencias de milisegundos son marginales para monitoreo ambiental. | **1%** |
+| **Memoria MB** | **Irrelevante** | El hardware actual soporta modelos de ensamble sin problemas. Restricción mínima. | **1%** |
+| **TOTAL** | | | **100%** |
+
+Autores como Jain et al. (2020) en 'Machine Learning for Wildfire Science' establecen que la Tasa de Detección (Recall) es la métrica crítica en sistemas de alerta temprana. Siguiendo la metodología de Cost-Sensitive Learning, donde se penaliza más fuertemente la omisión de un incendio que el uso de recursos computacionales.
+
+
+**FLUJO:**
+
+[Obtener métricas de cada modelo] → [Construir tabla comparativa] → [Aplicar ponderación AHP] → [Calcular puntaje TOPSIS] → [Seleccionar mejor modelo]
