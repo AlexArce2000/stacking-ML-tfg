@@ -130,3 +130,14 @@ Autores como Jain et al. (2020) en 'Machine Learning for Wildfire Science' estab
 **FLUJO:**
 
 [Obtener métricas de cada modelo] → [Construir tabla comparativa] → [Aplicar ponderación AHP] → [Calcular puntaje TOPSIS] → [Seleccionar mejor modelo]
+
+
+
+
+# NOTAS 05/02/2026
+
+- [ ] Pre-procesamiento de datos, correcciones, transformaciones (en el notebook jupyter), problemas de armonización temporal multifuente en datos como la temperatura, wind, precipitación, .
+- [ ] calidad de los datos, análisis de outliers, análisis de correlación entre variables predictoras, análisis de correlación entre variables predictoras y variable objetivo (incendio/no incendio), análisis de distribución de las variables predictoras (histogramas, boxplots), análisis de balanceo de clases (proporción de incendios vs no incendios), técnicas para manejar el desbalanceo (oversampling, undersampling, SMOTE).
+- [ ] Verificar la sintonía de los datasets (si es todo mensual o diaria o anual)
+- [ ] validación cambiar a temporal en lugar de espacial
+- [ ] stacking 
