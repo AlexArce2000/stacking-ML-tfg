@@ -145,3 +145,6 @@ Predicción de riesgo de incendios forestales en el
 departamento de Cordillera: Un enfoque basado
 en stacking de modelos de Machine Learning con
 datos geoespaciales
+
+### TITULO DE LA TESIS:
+Análisis multicriterio de modelos de Machine Learning mediante AHP–TOPSIS para la predicción del riesgo de incendios forestales

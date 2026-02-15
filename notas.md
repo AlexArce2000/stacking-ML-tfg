@@ -131,13 +131,79 @@ Autores como Jain et al. (2020) en 'Machine Learning for Wildfire Science' estab
 
 [Obtener métricas de cada modelo] → [Construir tabla comparativa] → [Aplicar ponderación AHP] → [Calcular puntaje TOPSIS] → [Seleccionar mejor modelo]
 
-
+--
 
 
 # NOTAS 05/02/2026
 
-- [ ] Pre-procesamiento de datos, correcciones, transformaciones (en el notebook jupyter), problemas de armonización temporal multifuente en datos como la temperatura, wind, precipitación, .
+- [x] Pre-procesamiento de datos, correcciones, transformaciones (en el notebook jupyter), problemas de armonización temporal multifuente en datos como la temperatura, wind, precipitación, .
 - [ ] calidad de los datos, análisis de outliers, análisis de correlación entre variables predictoras, análisis de correlación entre variables predictoras y variable objetivo (incendio/no incendio), análisis de distribución de las variables predictoras (histogramas, boxplots), análisis de balanceo de clases (proporción de incendios vs no incendios), técnicas para manejar el desbalanceo (oversampling, undersampling, SMOTE).
-- [ ] Verificar la sintonía de los datasets (si es todo mensual o diaria o anual)
-- [ ] validación cambiar a temporal en lugar de espacial
+- [x] Verificar la sintonía de los datasets (si es todo mensual o diaria o anual)
+- [x] validación cambiar a temporal en lugar de espacial
 - [ ] stacking 
+
+
+### NOTAS posibles agregados
+
+Agregar:
+- [ ] SHAP para el modelo ganador
+
+- [ ] Mapa de probabilidad espacial
+
+- [ ] Curvas ROC comparativas
+
+- [ ] Matriz de confusión espacializada
+
+
+`Temas a solapar según Chatgpt:`
+
+Dentro del StackingClassifier estás usando:
+
+cv=5
+
+
+Ese CV interno mezcla años dentro del bloque 2018–2022.
+
+No está mal, pero si quieres blindar la tesis podrías usar:
+
+TimeSeriesSplit(n_splits=5)
+
+
+Eso mantiene coherencia temporal también dentro del entrenamiento.
+
+No es obligatorio, pero te da más rigor.
+
+
+> Punto CRÍTICO que puede elevar tu tesis
+
+Ahora mismo estás evaluando:
+
+Modelos base entrenados dentro del stacking
+
+Stacking completo
+
+Pero esos modelos base:
+
+stacking_clf.named_estimators_
+
+
+Están entrenados sobre los datos preprocesados internos del stacking.
+
+Eso es correcto, pero metodológicamente:
+
+👉 No estás entrenando cada modelo como pipeline independiente.
+
+Lo ideal para tesis comparativa sería:
+
+Pipeline completo por modelo
+
+Mismo preprocesamiento
+
+Entrenamiento independiente
+
+Luego comparación
+
+Ahora mismo funciona, pero no es perfectamente simétrico.
+
+----
+
