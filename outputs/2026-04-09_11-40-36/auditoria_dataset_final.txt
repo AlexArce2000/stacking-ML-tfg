@@ -1,0 +1,45 @@
+==================================================
+ AUDITORÍA DEL DATASET FINAL - TESIS 2026
+==================================================
+
+Fecha de generación: 2026-04-09 11:40:49.057389
+Total de muestras: 44257
+Balance de Clases:
+clase
+0    22193
+1    22064
+
+--- INFO TÉCNICA DE COLUMNAS ---
+<class 'pandas.core.frame.DataFrame'>
+Index: 44257 entries, 0 to 45075
+Data columns (total 13 columns):
+ #   Column            Non-Null Count  Dtype   
+---  ------            --------------  -----   
+ 0   clase             44257 non-null  int64   
+ 1   elevation         44257 non-null  int64   
+ 2   pendiente         44257 non-null  float64 
+ 3   orientacion       44257 non-null  float64 
+ 4   temp_max_c        44257 non-null  float64 
+ 5   humedad_min_pct   44257 non-null  float64 
+ 6   precip_diaria_mm  44257 non-null  float64 
+ 7   precip_7dias_mm   44257 non-null  float64 
+ 8   viento_velocidad  44257 non-null  float64 
+ 9   ndvi_mensual      44257 non-null  float64 
+ 10  cobertura_suelo   44257 non-null  category
+ 11  mes_sin           44257 non-null  float64 
+ 12  mes_cos           44257 non-null  float64 
+dtypes: category(1), float64(10), int64(2)
+memory usage: 4.4 MB
+
+--- VISTA PREVIA DE DATOS CURADOS ---
+   clase  elevation  pendiente  orientacion  temp_max_c  humedad_min_pct  precip_diaria_mm  precip_7dias_mm  viento_velocidad  ndvi_mensual cobertura_suelo   mes_sin   mes_cos
+0      1        155       2.05       270.00       30.16            47.88              0.02           450.83          1.492146          0.26              30  0.500000  0.866025
+1      1        136       4.10       270.00       30.16            47.88              0.02           450.83          1.492146          0.27              30  0.500000  0.866025
+2      1        148       2.25       294.29       30.16            47.88              0.02           450.83          1.492146          0.27              30  0.500000  0.866025
+3      1        162       1.85       180.00       30.16            47.88              0.02           450.83          1.492146          0.35              30  0.500000  0.866025
+4      1         68       1.38       132.16       32.03            49.91              0.03            34.10          0.878237          0.35              10  0.866025  0.500000
+5      1         67       4.49       245.64       32.03            49.91              0.03            34.10          0.878237          0.33              30  0.866025  0.500000
+6      1        117       2.96       339.79       32.03            49.91              0.03            34.10          0.878237          0.31              10  0.866025  0.500000
+7      1        114       4.81        39.63       32.03            49.91              0.03            34.10          0.878237          0.32              10  0.866025  0.500000
+8      1        115       2.25       245.64       32.03            49.91              0.03            34.10          0.878237          0.32              10  0.866025  0.500000
+9      1         66       0.00        -0.00       32.03            49.91              0.03            34.10          0.878237          0.23              50  0.866025  0.500000

@@ -207,3 +207,9 @@ Ahora mismo funciona, pero no es perfectamente simétrico.
 
 ----
 
+
+
+"Para asegurar que las variables categóricas, específicamente la Cobertura de Suelo, no fueran interpretadas erróneamente como variables ordinales por los algoritmos, se aplicó la técnica de codificación One-Hot (One-Hot Encoding). Esta transformación convirtió las etiquetas de cobertura en variables binarias independientes, permitiendo que modelos sensibles a la distancia, como SVM y KNN, procesen la información de uso de suelo de manera no jerárquica, evitando sesgos numéricos en la predicción del riesgo."
+
+
+

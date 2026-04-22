@@ -1,0 +1,38 @@
+==================================================
+ RESUMEN DEL DATASET FINAL (Dataset_Completo_V1)
+==================================================
+
+--- DataFrame .info() ---
+<class 'pandas.core.frame.DataFrame'>
+Index: 44257 entries, 0 to 45075
+Data columns (total 12 columns):
+ #   Column            Non-Null Count  Dtype   
+---  ------            --------------  -----   
+ 0   clase             44257 non-null  int64   
+ 1   elevation         44257 non-null  int64   
+ 2   pendiente         44257 non-null  float64 
+ 3   orientacion       44257 non-null  float64 
+ 4   temp_max_c        44257 non-null  float64 
+ 5   humedad_min_pct   44257 non-null  float64 
+ 6   precip_diaria_mm  44257 non-null  float64 
+ 7   precip_7dias_mm   44257 non-null  float64 
+ 8   viento_u          44257 non-null  float64 
+ 9   viento_v          44257 non-null  float64 
+ 10  ndvi_mensual      44257 non-null  float64 
+ 11  cobertura_suelo   44257 non-null  category
+dtypes: category(1), float64(9), int64(2)
+memory usage: 4.1 MB
+
+
+--- DataFrame .head() ---
+   clase  elevation  pendiente  orientacion  temp_max_c  humedad_min_pct  precip_diaria_mm  precip_7dias_mm  viento_u  viento_v  ndvi_mensual cobertura_suelo
+0      1        155       2.05       270.00       30.16            47.88              0.02           450.83     -1.07     -1.04          0.26              30
+1      1        136       4.10       270.00       30.16            47.88              0.02           450.83     -1.07     -1.04          0.27              30
+2      1        148       2.25       294.29       30.16            47.88              0.02           450.83     -1.07     -1.04          0.27              30
+3      1        162       1.85       180.00       30.16            47.88              0.02           450.83     -1.07     -1.04          0.35              30
+4      1         68       1.38       132.16       32.03            49.91              0.03            34.10      0.12     -0.87          0.35              10
+
+--- Conteo de Clases (0: No incendio, 1: Incendio) ---
+clase
+0    22193
+1    22064
